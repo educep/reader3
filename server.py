@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from reader3 import Book, llm, notebook, process_epub, save_to_pickle  # type: ignore[attr-defined]
+from reader3 import Book, llm, notebook, process_epub, save_to_pickle
 
 logger = logging.getLogger(__name__)
 
