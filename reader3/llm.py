@@ -2,12 +2,13 @@ import os
 from collections.abc import AsyncIterator
 
 import anthropic
+from anthropic.types import MessageParam
 
 DEFAULT_MODEL: str = "claude-sonnet-4-6"
 
 
 async def stream_chat(
-    messages: list[dict],
+    messages: list[MessageParam],
     system: str,
     model: str | None = None,
 ) -> AsyncIterator[str]:

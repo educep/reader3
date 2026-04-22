@@ -1,18 +1,39 @@
 import contextlib
+import json
 import os
 import pickle
 import shutil
 import tempfile
 from functools import lru_cache
 
+from anthropic.types import MessageParam
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
-from reader3 import Book, process_epub, save_to_pickle
+from reader3 import Book, llm, process_epub, save_to_pickle  # type: ignore[attr-defined]
 
 app = FastAPI()
+os.makedirs("static", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+class ChatRequest(BaseModel):
+    book_id: str
+    chapter_index: int
+    selection: str | None = None
+    action: str  # "explain" | "summarize" | "translate" | "discuss" | "free"
+    messages: list[MessageParam]
+
 
 # Where are the book folders located?
 BOOKS_DIR = "books"
@@ -154,6 +175,52 @@ async def serve_image(book_id: str, image_name: str):
         raise HTTPException(status_code=404, detail="Image not found")
 
     return FileResponse(img_path)
+
+
+@app.get("/chat/health")
+async def chat_health():
+    has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    model = os.environ.get("READER3_MODEL", llm.DEFAULT_MODEL)
+    return {"ok": has_key, "model": model, "has_key": has_key}
+
+
+@app.post("/chat")
+async def chat_endpoint(request: ChatRequest):
+    book = load_book_cached(request.book_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    if request.chapter_index < 0 or request.chapter_index >= len(book.spine):
+        raise HTTPException(status_code=422, detail="chapter_index out of range")
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY not configured")
+
+    chapter = book.spine[request.chapter_index]
+    authors = ", ".join(book.metadata.authors) if book.metadata.authors else "Unknown"
+    selection_line = (
+        f"\nThe reader has selected this passage: {request.selection}" if request.selection else ""
+    )
+    system_prompt = (
+        f"You are a literary assistant reading along with the user.\n"
+        f"Book: {book.metadata.title} by {authors}\n"
+        f"Chapter: {request.chapter_index + 1} — {chapter.title}\n"
+        f"Chapter text (excerpt for context):\n{chapter.text[:3000]}"
+        f"{selection_line}\n"
+        f"Action requested: {request.action}"
+    )
+
+    async def generate():
+        try:
+            async for token in llm.stream_chat(
+                messages=request.messages,
+                system=system_prompt,
+            ):
+                yield f"data: {json.dumps({'token': token})}\n\n"
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        except RuntimeError as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 if __name__ == "__main__":
