@@ -424,7 +424,16 @@
         }
 
         /* Hidden native file input */
-        #fileInput { display: none; }
+        /* Visually hidden but kept in layout — some browsers refuse to open
+           the native file picker when the input is display:none. */
+        #fileInput {
+            position: absolute;
+            width: 1px; height: 1px;
+            opacity: 0;
+            pointer-events: none;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+        }
 
         /* New-book flash on just-uploaded card */
         .book-card.is-new {
