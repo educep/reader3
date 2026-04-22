@@ -192,7 +192,7 @@ def process_epub(epub_path: str, output_dir: str) -> Book:
     image_map = {} # Key: internal_path, Value: local_relative_path
 
     for item in book.get_items():
-        if item.get_type() == ebooklib.ITEM_IMAGE:
+        if item.get_type() in (ebooklib.ITEM_IMAGE, ebooklib.ITEM_COVER):
             # Normalize filename
             original_fname = os.path.basename(item.get_name())
             # Sanitize filename for OS
@@ -301,7 +301,9 @@ if __name__ == "__main__":
 
     epub_file = sys.argv[1]
     assert os.path.exists(epub_file), "File not found."
-    out_dir = os.path.splitext(epub_file)[0] + "_data"
+    base_name = os.path.splitext(os.path.basename(epub_file))[0]
+    out_dir = os.path.join("books", base_name + "_data")
+    os.makedirs("books", exist_ok=True)
 
     book_obj = process_epub(epub_file, out_dir)
     save_to_pickle(book_obj, out_dir)

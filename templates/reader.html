@@ -3,86 +3,593 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ book.metadata.title }}</title>
+    <title>{{ book.metadata.title }} — reader 3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        /* Layout */
-        body { margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; font-family: "Georgia", serif; background: #fff; }
+        :root {
+            --paper: #f3ecdd;
+            --paper-shade: #ebe2cf;
+            --paper-deep: #e4d9c0;
+            --ink: #1a1512;
+            --ink-soft: #4a3f36;
+            --ink-mute: #8a7a67;
+            --rule: #c9bda4;
+            --rule-soft: #d9cfb7;
+            --oxblood: #8b2635;
+            --oxblood-ink: #6b1d28;
+            --gold: #b08842;
+            --sidebar-w: 340px;
+        }
 
-        /* Sidebar */
-        #sidebar { width: 300px; background: #f8f9fa; border-right: 1px solid #e9ecef; overflow-y: auto; padding: 20px; flex-shrink: 0; }
-        .nav-header { font-family: -apple-system, sans-serif; font-weight: bold; color: #495057; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #dee2e6; }
-        .nav-home { display: block; margin-bottom: 20px; color: #3498db; text-decoration: none; font-family: -apple-system, sans-serif; font-size: 0.9em; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
 
-        /* TOC Tree */
-        ul.toc-list { list-style: none; padding-left: 0; margin: 0; }
-        ul.toc-list ul { padding-left: 20px; } /* Indent children */
-        li.toc-item { margin-bottom: 8px; }
-        a.toc-link { text-decoration: none; color: #495057; font-size: 0.95em; display: block; padding: 4px 0; line-height: 1.4; }
-        a.toc-link:hover { color: #000; text-decoration: underline; }
-        a.toc-link.active { color: #d63384; font-weight: bold; }
+        body {
+            font-family: "Fraunces", Georgia, serif;
+            font-optical-sizing: auto;
+            background: var(--paper);
+            color: var(--ink);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
 
-        /* Main Content */
-        #main { flex-grow: 1; overflow-y: auto; position: relative; scroll-behavior: smooth; }
-        .content-container { max-width: 700px; margin: 0 auto; padding: 60px 40px; line-height: 1.8; font-size: 1.15em; color: #212529; }
+        /* ===== SIDEBAR ===== */
+        #sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background: var(--paper-shade);
+            border-right: 1px solid var(--rule);
+            padding: 32px 28px 48px;
+            position: relative;
+            background-image:
+                radial-gradient(600px 400px at 0% 0%, rgba(139, 38, 53, 0.06), transparent 60%),
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        }
 
-        /* Content Styling (Basic normalization for the book HTML) */
-        .book-content img { max-width: 100%; height: auto; display: block; margin: 20px auto; }
-        .book-content h1, .book-content h2, .book-content h3 { font-family: -apple-system, sans-serif; margin-top: 1.5em; color: #333; }
-        .book-content p { margin-bottom: 1.5em; text-align: justify; }
+        /* Sidebar scrollbar */
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-track { background: transparent; }
+        #sidebar::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 4px; }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); }
 
-        /* Navigation Footer */
-        .chapter-nav { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; font-family: -apple-system, sans-serif; }
-        .nav-btn { text-decoration: none; color: #3498db; font-weight: bold; padding: 10px 20px; border: 1px solid #3498db; border-radius: 4px; transition: all 0.2s; }
-        .nav-btn:hover { background: #3498db; color: white; }
-        .nav-btn.disabled { opacity: 0.5; pointer-events: none; border-color: #ccc; color: #ccc; }
+        .sb-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            text-decoration: none;
+            margin-bottom: 28px;
+            transition: color 180ms ease;
+        }
+        .sb-home:hover { color: var(--oxblood); }
+        .sb-home .arr { transition: transform 220ms ease; }
+        .sb-home:hover .arr { transform: translateX(-4px); }
 
+        .sb-kicker {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            margin-bottom: 10px;
+        }
+        .sb-title {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-variation-settings: "opsz" 72;
+            font-size: 26px;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            margin: 0 0 6px;
+            color: var(--ink);
+        }
+        .sb-author {
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-size: 14px;
+            color: var(--ink-soft);
+            margin: 0 0 24px;
+        }
+
+        .sb-rule {
+            height: 1px;
+            background: var(--rule);
+            margin: 24px 0 20px;
+            position: relative;
+        }
+        .sb-rule::before {
+            content: "❦";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--paper-shade);
+            padding: 0 10px;
+            color: var(--ink-mute);
+            font-size: 13px;
+        }
+
+        .sb-section-label {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .sb-section-label .toggle-all {
+            font-family: inherit;
+            font-size: 9px;
+            letter-spacing: 0.24em;
+            color: var(--ink-soft);
+            background: none;
+            border: none;
+            padding: 2px 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: color 180ms ease;
+        }
+        .sb-section-label .toggle-all:hover { color: var(--oxblood); }
+
+        /* ---- TOC TREE ---- */
+        ul.toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul.toc-list ul.toc-list {
+            padding-left: 16px;
+            margin-top: 4px;
+            border-left: 1px solid var(--rule-soft);
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 360ms cubic-bezier(.2,.7,.2,1), opacity 220ms ease;
+        }
+        li.toc-item.is-open > ul.toc-list {
+            max-height: 5000px;
+            opacity: 1;
+        }
+
+        li.toc-item {
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        .toc-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 6px 0;
+        }
+        .toc-disclose {
+            flex-shrink: 0;
+            width: 16px;
+            height: 22px;
+            padding: 0;
+            margin: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--ink-mute);
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            line-height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 180ms ease, transform 240ms cubic-bezier(.2,.7,.2,1);
+        }
+        .toc-disclose::before {
+            content: "▸";
+            display: inline-block;
+            transition: transform 240ms cubic-bezier(.2,.7,.2,1);
+        }
+        li.toc-item.is-open > .toc-row > .toc-disclose::before {
+            transform: rotate(90deg);
+        }
+        .toc-disclose.is-leaf {
+            cursor: default;
+            opacity: 0.35;
+        }
+        .toc-disclose.is-leaf::before { content: "·"; transform: none !important; }
+        .toc-disclose:hover { color: var(--oxblood); }
+
+        a.toc-link {
+            flex: 1;
+            font-family: "Fraunces", serif;
+            font-size: 14px;
+            line-height: 1.45;
+            color: var(--ink-soft);
+            text-decoration: none;
+            padding: 2px 4px 2px 2px;
+            border-left: 2px solid transparent;
+            margin-left: -6px;
+            padding-left: 8px;
+            transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+            cursor: pointer;
+            background: none;
+            text-align: left;
+            border-top: none;
+            border-right: none;
+            border-bottom: none;
+        }
+        a.toc-link:hover {
+            color: var(--ink);
+            background: rgba(255,253,247,0.5);
+        }
+        a.toc-link.active {
+            color: var(--oxblood);
+            border-left-color: var(--oxblood);
+            font-weight: 500;
+        }
+
+        /* ===== MAIN ===== */
+        #main {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            background: var(--paper);
+            position: relative;
+            background-image:
+                radial-gradient(1200px 700px at 100% 0%, rgba(176, 136, 66, 0.08), transparent 55%),
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+        }
+        #main::-webkit-scrollbar { width: 10px; }
+        #main::-webkit-scrollbar-track { background: transparent; }
+        #main::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 5px; }
+        #main::-webkit-scrollbar-thumb:hover { background: var(--ink-mute); }
+
+        /* Reading progress strip at the very top of main */
+        .reading-progress {
+            position: sticky;
+            top: 0;
+            height: 2px;
+            background: var(--paper-deep);
+            z-index: 5;
+        }
+        .reading-progress .bar {
+            height: 100%;
+            width: 0;
+            background: var(--oxblood);
+            transition: width 120ms ease;
+        }
+
+        .content-container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 72px 48px 120px;
+        }
+
+        /* Chapter header / folio */
+        .chapter-folio {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--ink);
+            margin-bottom: 10px;
+        }
+        .chapter-folio::after {
+            content: "";
+            position: absolute;
+        }
+        .folio-wrap { position: relative; margin-bottom: 40px; }
+        .folio-wrap::after {
+            content: "";
+            display: block;
+            height: 1px;
+            background: var(--ink);
+            opacity: 0.4;
+            margin-top: 4px;
+        }
+        .folio-title {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-variation-settings: "opsz" 144;
+            font-size: clamp(40px, 5.5vw, 64px);
+            line-height: 1;
+            letter-spacing: -0.02em;
+            margin: 18px 0 0;
+            color: var(--ink);
+        }
+        .folio-title em { font-style: italic; color: var(--oxblood); font-weight: 400; }
+
+        /* ===== READER BODY ===== */
+        .book-content {
+            font-family: "Fraunces", Georgia, serif;
+            font-weight: 400;
+            font-variation-settings: "opsz" 14;
+            font-size: 19px;
+            line-height: 1.75;
+            color: var(--ink);
+        }
+        .book-content p {
+            margin: 0 0 1.4em;
+            text-align: justify;
+            hyphens: auto;
+            -webkit-hyphens: auto;
+        }
+        .book-content p:first-of-type::first-letter {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-size: 4.4em;
+            float: left;
+            line-height: 0.85;
+            padding: 4px 10px 0 0;
+            color: var(--oxblood);
+            font-variation-settings: "opsz" 144;
+        }
+        .book-content h1,
+        .book-content h2,
+        .book-content h3,
+        .book-content h4 {
+            font-family: "Fraunces", serif;
+            font-variation-settings: "opsz" 72;
+            font-weight: 500;
+            letter-spacing: -0.015em;
+            color: var(--ink);
+            margin: 1.8em 0 0.6em;
+            line-height: 1.15;
+        }
+        .book-content h1 { font-size: 2.1em; }
+        .book-content h2 { font-size: 1.65em; }
+        .book-content h3 { font-size: 1.3em; font-style: italic; font-weight: 400; color: var(--oxblood); }
+        .book-content h4 { font-size: 1.1em; text-transform: uppercase; letter-spacing: 0.1em; font-family: "IBM Plex Mono", monospace; color: var(--ink-soft); }
+
+        .book-content img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 32px auto;
+            box-shadow: 0 2px 18px rgba(26, 21, 18, 0.15);
+        }
+        .book-content a {
+            color: var(--oxblood);
+            text-decoration-thickness: 1px;
+            text-underline-offset: 3px;
+        }
+        .book-content blockquote {
+            border-left: 3px solid var(--oxblood);
+            padding: 4px 0 4px 22px;
+            margin: 1.5em 0;
+            font-style: italic;
+            color: var(--ink-soft);
+        }
+        .book-content hr {
+            border: none;
+            text-align: center;
+            margin: 2.2em 0;
+            height: 1em;
+        }
+        .book-content hr::before {
+            content: "❦";
+            color: var(--ink-mute);
+            font-size: 1.1em;
+        }
+        .book-content ul, .book-content ol { padding-left: 1.4em; margin: 0 0 1.4em; }
+        .book-content li { margin-bottom: 0.4em; }
+        .book-content code, .book-content pre {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 0.88em;
+        }
+        .book-content pre {
+            background: var(--paper-shade);
+            padding: 16px 18px;
+            overflow-x: auto;
+            border-left: 2px solid var(--ink);
+        }
+        .book-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.4em 0;
+            font-size: 0.92em;
+        }
+        .book-content th, .book-content td {
+            border-bottom: 1px solid var(--rule);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .book-content th {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+        }
+
+        /* ===== CHAPTER NAV FOOTER ===== */
+        .chapter-nav {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: stretch;
+            gap: 0;
+            margin-top: 72px;
+            padding-top: 18px;
+            border-top: 1px solid var(--ink);
+            position: relative;
+        }
+        .chapter-nav::before {
+            content: "";
+            position: absolute;
+            left: 0; right: 0; top: -6px;
+            height: 1px;
+            background: var(--ink);
+            opacity: 0.4;
+        }
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-decoration: none;
+            padding: 16px 8px;
+            color: var(--ink);
+            transition: color 180ms ease;
+        }
+        .nav-btn .nav-kicker {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+        }
+        .nav-btn .nav-label {
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-size: 18px;
+            color: var(--ink);
+        }
+        .nav-btn.prev { text-align: left; }
+        .nav-btn.next { text-align: right; }
+        .nav-btn:hover { color: var(--oxblood); }
+        .nav-btn.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        .nav-meta {
+            padding: 16px 24px;
+            border-left: 1px solid var(--rule);
+            border-right: 1px solid var(--rule);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            min-width: 120px;
+        }
+        .nav-meta .nav-meta-num {
+            font-family: "Fraunces", serif;
+            font-size: 22px;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+            text-transform: none;
+        }
+
+        /* Keyboard hint */
+        .kbd-hint {
+            text-align: center;
+            margin-top: 28px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+        }
+        .kbd-hint kbd {
+            font-family: inherit;
+            background: var(--paper-shade);
+            border: 1px solid var(--rule);
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 10px;
+            color: var(--ink);
+        }
+
+        /* Copy chapter button */
+        .chapter-actions {
+            position: sticky;
+            top: 14px;
+            float: right;
+            margin: -36px -12px 0 0;
+            z-index: 4;
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            background: rgba(255, 253, 247, 0.88);
+            border: 1px solid var(--rule);
+            padding: 7px 12px;
+            cursor: pointer;
+            transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+            backdrop-filter: blur(3px);
+        }
+        .action-btn:hover {
+            color: var(--oxblood);
+            border-color: var(--oxblood);
+        }
+        .action-btn.ok { color: var(--gold); border-color: var(--gold); }
+
+        /* Mobile: sidebar collapses into a drawer */
+        @media (max-width: 860px) {
+            body { display: block; height: auto; overflow: auto; }
+            #sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--rule);
+                padding: 24px 20px;
+            }
+            #main { height: auto; }
+            .content-container { padding: 36px 22px 80px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR -->
-    <div id="sidebar">
-        <a href="/" class="nav-home">← Back to Library</a>
-        <div class="nav-header">{{ book.metadata.title }}</div>
+    <!-- ===== SIDEBAR ===== -->
+    <aside id="sidebar">
+        <a href="/" class="sb-home">
+            <span class="arr">←</span>
+            <span>Back to Library</span>
+        </a>
 
-        <!-- Recursive Macro for TOC -->
+        <div class="sb-kicker">Now Reading</div>
+        <h1 class="sb-title">{{ book.metadata.title }}</h1>
+        {% if book.metadata.authors %}
+            <p class="sb-author">{{ book.metadata.authors | join(', ') }}</p>
+        {% endif %}
+
+        <div class="sb-rule"></div>
+
+        <div class="sb-section-label">
+            <span>Table of Contents</span>
+            <button type="button" class="toggle-all" id="toggleAll">Expand All</button>
+        </div>
+
         {% macro render_toc(items) %}
             <ul class="toc-list">
             {% for item in items %}
-                <li class="toc-item">
-                    <!--
-                        Matching Logic:
-                        If the TOC item filename matches the current chapter filename, mark active.
-                        Ideally we match spine indices, but Reader 3 TOC maps to filenames.
-                        We use a simple hash matching logic here.
-                    -->
-                    {% set is_active = current_chapter.href == item.file_href %}
-
-                    <!--
-                       We need to find which linear chapter index (0, 1, 2) corresponds
-                       to this TOC entry file.
-                       Since that's hard to calculate in Jinja, we just link to the
-                       file anchor. BUT, to make our linear navigation work, we
-                       rely on the fact that the user is currently reading 'chapter_index'.
-
-                       Ideally, clicking a TOC link should find the 'index' of that file.
-                       For simplicity in this version: We link to the 'href' (filename)
-                       and let JavaScript or Backend handle it?
-
-                       Actually, let's just link to the file. The browser interprets #anchors.
-                       However, our router uses /read/book/INDEX.
-
-                       SIMPLE FIX: We won't link the TOC to the route index in this simple version
-                       unless we build a map. We will visually show structure,
-                       but rely on "Previous/Next" for linear reading.
-
-                       BETTER FIX: Use JavaScript to match filenames.
-                    -->
-                    <a href="#" onclick="findAndGo('{{ item.file_href }}')"
-                       class="toc-link {% if is_active %}active{% endif %}">
-                        {{ item.title }}
-                    </a>
-
+                {% set is_active = current_chapter.href == item.file_href %}
+                <li class="toc-item {% if is_active %}is-open{% endif %}">
+                    <div class="toc-row">
+                        {% if item.children %}
+                            <button type="button" class="toc-disclose" aria-label="Toggle"></button>
+                        {% else %}
+                            <span class="toc-disclose is-leaf" aria-hidden="true"></span>
+                        {% endif %}
+                        <a class="toc-link {% if is_active %}active{% endif %}"
+                           data-href="{{ item.file_href }}"
+                           data-anchor="{{ item.anchor }}">
+                           {{ item.title }}
+                        </a>
+                    </div>
                     {% if item.children %}
                         {{ render_toc(item.children) }}
                     {% endif %}
@@ -92,63 +599,193 @@
         {% endmacro %}
 
         {{ render_toc(book.toc) }}
-    </div>
+    </aside>
 
-    <!-- MAIN CONTENT -->
-    <div id="main">
+    <!-- ===== MAIN ===== -->
+    <main id="main">
+        <div class="reading-progress"><div class="bar" id="readingBar"></div></div>
+
         <div class="content-container">
-            <div class="book-content">
+
+            <div class="chapter-actions">
+                <button type="button" class="action-btn" id="copyBtn" title="Copy the full chapter's plain text to clipboard">Copy Full Text</button>
+            </div>
+
+            <div class="folio-wrap">
+                <div class="chapter-folio">
+                    <span>{{ book.metadata.title }}</span>
+                    <span>Section N° {{ '%03d' % (chapter_index + 1) }} / {{ '%03d' % book.spine|length }}</span>
+                </div>
+                <h2 class="folio-title">
+                    {% set heading = current_chapter.title or ('Section ' ~ (chapter_index + 1)) %}
+                    {{ heading }}
+                </h2>
+            </div>
+
+            <div class="book-content" id="chapterBody">
                 {{ current_chapter.content | safe }}
             </div>
 
             <div class="chapter-nav">
                 {% if prev_idx is not none %}
-                    <a href="/read/{{ book_id }}/{{ prev_idx }}" class="nav-btn">← Previous</a>
+                    <a href="/read/{{ book_id }}/{{ prev_idx }}" class="nav-btn prev">
+                        <span class="nav-kicker">← Previous</span>
+                        <span class="nav-label">Section {{ prev_idx + 1 }}</span>
+                    </a>
                 {% else %}
-                    <span class="nav-btn disabled">← Previous</span>
+                    <span class="nav-btn prev disabled">
+                        <span class="nav-kicker">← Previous</span>
+                        <span class="nav-label">Beginning</span>
+                    </span>
                 {% endif %}
 
-                <span style="color: #999; padding: 10px;">
-                    Section {{ chapter_index + 1 }} of {{ book.spine|length }}
-                </span>
+                <div class="nav-meta">
+                    <span>Section</span>
+                    <span class="nav-meta-num">{{ chapter_index + 1 }} / {{ book.spine|length }}</span>
+                </div>
 
                 {% if next_idx is not none %}
-                    <a href="/read/{{ book_id }}/{{ next_idx }}" class="nav-btn">Next →</a>
+                    <a href="/read/{{ book_id }}/{{ next_idx }}" class="nav-btn next">
+                        <span class="nav-kicker">Next →</span>
+                        <span class="nav-label">Section {{ next_idx + 1 }}</span>
+                    </a>
                 {% else %}
-                    <span class="nav-btn disabled">Next →</span>
+                    <span class="nav-btn next disabled">
+                        <span class="nav-kicker">Next →</span>
+                        <span class="nav-label">The End</span>
+                    </span>
                 {% endif %}
             </div>
+
+            <div class="kbd-hint">
+                Navigate with <kbd>←</kbd> <kbd>→</kbd> &nbsp;·&nbsp; Toggle TOC branches by clicking the ▸
+            </div>
         </div>
-    </div>
+    </main>
 
     <script>
-        // Helper to map TOC filenames to Spine Indices
-        // Pass the spine data from python to JS
         const spineMap = {
-            {% for ch in book.spine %}
-            "{{ ch.href }}": {{ ch.order }},
+            {% for ch in book.spine %}"{{ ch.href }}": {{ ch.order }},
             {% endfor %}
         };
+        const bookId = "{{ book_id }}";
+        const currentIdx = {{ chapter_index }};
+        const prevIdx = {{ prev_idx if prev_idx is not none else 'null' }};
+        const nextIdx = {{ next_idx if next_idx is not none else 'null' }};
 
-        function findAndGo(filename) {
-            // The TOC usually has specific filenames e.g. "text/part001.html"
-            // Sometimes it has anchors "text/part001.html#header"
-            // We strip the anchor to find the page index
-            const cleanFile = filename.split('#')[0];
-            const anchor = filename.split('#')[1];
+        /* ---- TOC: collapsible ---- */
+        const tocItems = document.querySelectorAll('.toc-item');
 
-            const idx = spineMap[cleanFile];
-
-            if (idx !== undefined) {
-                let url = "/read/{{ book_id }}/" + idx;
-                // If there was an anchor, we could try to scroll to it,
-                // but simple page loads often lose anchor position without extra JS.
-                // Let's just go to the page.
-                window.location.href = url;
-            } else {
-                console.log("Could not find index for", filename);
+        // Auto-expand ancestors of the active item
+        document.querySelectorAll('.toc-link.active').forEach(link => {
+            let parent = link.closest('.toc-item');
+            while (parent) {
+                parent.classList.add('is-open');
+                parent = parent.parentElement.closest('.toc-item');
             }
+        });
+
+        // Click on the disclosure triangle toggles just that branch
+        document.querySelectorAll('.toc-disclose').forEach(btn => {
+            if (btn.classList.contains('is-leaf')) return;
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const item = btn.closest('.toc-item');
+                item.classList.toggle('is-open');
+            });
+        });
+
+        // Click on a TOC link → navigate (and if there's no destination in spine, just toggle)
+        document.querySelectorAll('.toc-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const href = link.getAttribute('data-href');
+                const anchor = link.getAttribute('data-anchor');
+                const idx = spineMap[href];
+                if (idx !== undefined) {
+                    let url = "/read/" + bookId + "/" + idx;
+                    if (anchor) url += "#" + anchor;
+                    window.location.href = url;
+                } else {
+                    // No corresponding spine entry — treat as a branch toggle if it has children
+                    const item = link.closest('.toc-item');
+                    if (item.querySelector('ul.toc-list')) item.classList.toggle('is-open');
+                    else console.warn('Could not find spine index for', href);
+                }
+            });
+        });
+
+        // Expand / Collapse All
+        const toggleAllBtn = document.getElementById('toggleAll');
+        function setAll(open) {
+            tocItems.forEach(it => {
+                if (it.querySelector('ul.toc-list')) {
+                    it.classList.toggle('is-open', open);
+                }
+            });
+            toggleAllBtn.textContent = open ? 'Collapse All' : 'Expand All';
         }
+        // Initial state: only active branch open
+        toggleAllBtn.addEventListener('click', () => {
+            const anyClosed = Array.from(tocItems).some(it =>
+                it.querySelector('ul.toc-list') && !it.classList.contains('is-open')
+            );
+            setAll(anyClosed);
+        });
+
+        // Scroll active item into view on load
+        const activeLink = document.querySelector('.toc-link.active');
+        if (activeLink) {
+            activeLink.scrollIntoView({ block: 'center', behavior: 'instant' });
+        }
+
+        /* ---- Scroll to anchor if URL has one ---- */
+        if (window.location.hash) {
+            const target = document.getElementById(window.location.hash.slice(1));
+            if (target) setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+        }
+
+        /* ---- Reading progress bar ---- */
+        const main = document.getElementById('main');
+        const bar  = document.getElementById('readingBar');
+        function updateProgress() {
+            const h = main.scrollHeight - main.clientHeight;
+            const pct = h > 0 ? (main.scrollTop / h) * 100 : 0;
+            bar.style.width = pct.toFixed(1) + '%';
+        }
+        main.addEventListener('scroll', updateProgress, { passive: true });
+        updateProgress();
+
+        /* ---- Keyboard navigation ---- */
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea, [contenteditable]')) return;
+            if (e.key === 'ArrowLeft' && prevIdx !== null) {
+                window.location.href = "/read/" + bookId + "/" + prevIdx;
+            } else if (e.key === 'ArrowRight' && nextIdx !== null) {
+                window.location.href = "/read/" + bookId + "/" + nextIdx;
+            }
+        });
+
+        /* ---- Copy chapter text ---- */
+        const copyBtn = document.getElementById('copyBtn');
+        const chapterBody = document.getElementById('chapterBody');
+        copyBtn.addEventListener('click', async () => {
+            try {
+                const text = chapterBody.innerText.replace(/\n{3,}/g, '\n\n').trim();
+                await navigator.clipboard.writeText(text);
+                const prev = copyBtn.textContent;
+                copyBtn.textContent = 'Copied ✓';
+                copyBtn.classList.add('ok');
+                setTimeout(() => {
+                    copyBtn.textContent = prev;
+                    copyBtn.classList.remove('ok');
+                }, 1600);
+            } catch (err) {
+                copyBtn.textContent = 'Copy failed';
+                setTimeout(() => { copyBtn.textContent = 'Copy Full Text'; }, 1600);
+            }
+        });
     </script>
 </body>
 </html>

@@ -1,20 +1,22 @@
 import os
 import pickle
+import shutil
+import tempfile
 from functools import lru_cache
 from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from reader3 import Book, BookMetadata, ChapterContent, TOCEntry
+from reader3 import Book, BookMetadata, ChapterContent, TOCEntry, process_epub, save_to_pickle
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Where are the book folders located?
-BOOKS_DIR = "."
+BOOKS_DIR = "books"
 
 @lru_cache(maxsize=10)
 def load_book_cached(folder_name: str) -> Optional[Book]:
@@ -42,7 +44,8 @@ async def library_view(request: Request):
     # Scan directory for folders ending in '_data' that have a book.pkl
     if os.path.exists(BOOKS_DIR):
         for item in os.listdir(BOOKS_DIR):
-            if item.endswith("_data") and os.path.isdir(item):
+            item_path = os.path.join(BOOKS_DIR, item)
+            if item.endswith("_data") and os.path.isdir(item_path):
                 # Try to load it to get the title
                 book = load_book_cached(item)
                 if book:
@@ -85,6 +88,47 @@ async def read_chapter(request: Request, book_id: str, chapter_index: int):
         "prev_idx": prev_idx,
         "next_idx": next_idx
     })
+
+@app.post("/upload")
+async def upload_epub(file: UploadFile = File(...)):
+    """Accept an uploaded .epub, ingest it into books/, and refresh caches."""
+    filename = file.filename or ""
+    if not filename.lower().endswith(".epub"):
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Only .epub files are supported."},
+        )
+
+    os.makedirs(BOOKS_DIR, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(filename))[0]
+    out_dir = os.path.join(BOOKS_DIR, base_name + "_data")
+
+    # Save the upload to a temp file on disk (ebooklib needs a path).
+    tmp = tempfile.NamedTemporaryFile(suffix=".epub", delete=False)
+    try:
+        shutil.copyfileobj(file.file, tmp)
+        tmp.close()
+        book_obj = process_epub(tmp.name, out_dir)
+        save_to_pickle(book_obj, out_dir)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Failed to process EPUB: {e}"})
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+    # Invalidate the lru_cache so the new/updated book is picked up immediately.
+    load_book_cached.cache_clear()
+
+    return {
+        "ok": True,
+        "book_id": base_name + "_data",
+        "title": book_obj.metadata.title,
+        "author": ", ".join(book_obj.metadata.authors),
+        "chapters": len(book_obj.spine),
+    }
+
 
 @app.get("/read/{book_id}/images/{image_name}")
 async def serve_image(book_id: str, image_name: str):
