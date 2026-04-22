@@ -12,3 +12,40 @@ dependencies = [
     "python-multipart>=0.0.26",
     "uvicorn>=0.38.0",
 ]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=3.8.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["books", ".venv", "templates"]
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes (flake8 core), I = isort,
+# UP = pyupgrade, B = bugbear, SIM = simplify, C4 = comprehensions.
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "C4"]
+ignore = [
+    "E501",  # line length handled by ruff-format
+    "B008",  # FastAPI uses Depends()/File() in defaults
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+files = ["reader3.py", "server.py"]
+# Pragmatic: catch real bugs without forcing exhaustive annotations.
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+# ebooklib and bs4 ship no stubs.
+[[tool.mypy.overrides]]
+module = ["ebooklib", "ebooklib.*", "bs4", "bs4.*", "uvicorn"]
+ignore_missing_imports = true

@@ -1,0 +1,48 @@
+# Pre-commit hooks for reader3.
+# Tool config (ruff) lives in pyproject.toml.
+#
+# Usage:
+#   uv run pre-commit install              install git hook
+#   uv run pre-commit run --all-files      run on the whole tree
+#   uv run pre-commit run                  run on staged files only
+
+default_language_version:
+  python: python3.12
+
+exclude: "^(\\.venv|venv|build|dist|books|templates)/"
+
+repos:
+  # --- ruff: replaces black + isort + flake8 (+ pyupgrade) ------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  # --- mypy (types) --------------------------------------------------
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        args: ["--config-file", "pyproject.toml"]
+        additional_dependencies:
+          - fastapi>=0.121.2
+          - jinja2>=3.1.6
+        files: ^(reader3|server)\.py$
+
+  # --- housekeeping --------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=500"]

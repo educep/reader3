@@ -1,16 +1,15 @@
+import contextlib
 import os
 import pickle
 import shutil
 import tempfile
 from functools import lru_cache
-from typing import Optional
 
-from fastapi import FastAPI, Request, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from reader3 import Book, BookMetadata, ChapterContent, TOCEntry, process_epub, save_to_pickle
+from reader3 import Book, process_epub, save_to_pickle
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -18,8 +17,9 @@ templates = Jinja2Templates(directory="templates")
 # Where are the book folders located?
 BOOKS_DIR = "books"
 
+
 @lru_cache(maxsize=10)
-def load_book_cached(folder_name: str) -> Optional[Book]:
+def load_book_cached(folder_name: str) -> Book | None:
     """
     Loads the book from the pickle file.
     Cached so we don't re-read the disk on every click.
@@ -36,6 +36,7 @@ def load_book_cached(folder_name: str) -> Optional[Book]:
         print(f"Error loading book {folder_name}: {e}")
         return None
 
+
 @app.get("/", response_class=HTMLResponse)
 async def library_view(request: Request):
     """Lists all available processed books."""
@@ -49,19 +50,23 @@ async def library_view(request: Request):
                 # Try to load it to get the title
                 book = load_book_cached(item)
                 if book:
-                    books.append({
-                        "id": item,
-                        "title": book.metadata.title,
-                        "author": ", ".join(book.metadata.authors),
-                        "chapters": len(book.spine)
-                    })
+                    books.append(
+                        {
+                            "id": item,
+                            "title": book.metadata.title,
+                            "author": ", ".join(book.metadata.authors),
+                            "chapters": len(book.spine),
+                        }
+                    )
 
-    return templates.TemplateResponse("library.html", {"request": request, "books": books})
+    return templates.TemplateResponse(request, "library.html", {"books": books})
 
-@app.get("/read/{book_id}", response_class=HTMLResponse)
+
+@app.get("/read/{book_id}")
 async def redirect_to_first_chapter(book_id: str):
     """Helper to just go to chapter 0."""
-    return await read_chapter(book_id=book_id, chapter_index=0)
+    return RedirectResponse(url=f"/read/{book_id}/0")
+
 
 @app.get("/read/{book_id}/{chapter_index}", response_class=HTMLResponse)
 async def read_chapter(request: Request, book_id: str, chapter_index: int):
@@ -79,15 +84,19 @@ async def read_chapter(request: Request, book_id: str, chapter_index: int):
     prev_idx = chapter_index - 1 if chapter_index > 0 else None
     next_idx = chapter_index + 1 if chapter_index < len(book.spine) - 1 else None
 
-    return templates.TemplateResponse("reader.html", {
-        "request": request,
-        "book": book,
-        "current_chapter": current_chapter,
-        "chapter_index": chapter_index,
-        "book_id": book_id,
-        "prev_idx": prev_idx,
-        "next_idx": next_idx
-    })
+    return templates.TemplateResponse(
+        request,
+        "reader.html",
+        {
+            "book": book,
+            "current_chapter": current_chapter,
+            "chapter_index": chapter_index,
+            "book_id": book_id,
+            "prev_idx": prev_idx,
+            "next_idx": next_idx,
+        },
+    )
+
 
 @app.post("/upload")
 async def upload_epub(file: UploadFile = File(...)):
@@ -106,17 +115,15 @@ async def upload_epub(file: UploadFile = File(...)):
     # Save the upload to a temp file on disk (ebooklib needs a path).
     tmp = tempfile.NamedTemporaryFile(suffix=".epub", delete=False)
     try:
-        shutil.copyfileobj(file.file, tmp)
+        shutil.copyfileobj(file.file, tmp)  # type: ignore[misc]
         tmp.close()
         book_obj = process_epub(tmp.name, out_dir)
         save_to_pickle(book_obj, out_dir)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": f"Failed to process EPUB: {e}"})
     finally:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp.name)
-        except OSError:
-            pass
 
     # Invalidate the lru_cache so the new/updated book is picked up immediately.
     load_book_cached.cache_clear()
@@ -148,7 +155,9 @@ async def serve_image(book_id: str, image_name: str):
 
     return FileResponse(img_path)
 
+
 if __name__ == "__main__":
     import uvicorn
+
     print("Starting server at http://127.0.0.1:8123")
     uvicorn.run(app, host="127.0.0.1", port=8123)
