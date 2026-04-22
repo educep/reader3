@@ -285,23 +285,3 @@ def save_to_pickle(book: Book, output_dir: str):
     with open(p_path, "wb") as f:
         pickle.dump(book, f)
     print(f"Saved structured data to {p_path}")
-
-
-class _CompatUnpickler(pickle.Unpickler):
-    # Older CLI-ingested pickles reference classes as ``__main__.Book`` because
-    # ``reader3.py`` was run as a script and the dataclasses lived in its __main__.
-    # Redirect those lookups to this package so legacy pickles keep loading.
-    def find_class(self, module: str, name: str):
-        if module == "__main__" and name in {
-            "Book",
-            "ChapterContent",
-            "TOCEntry",
-            "BookMetadata",
-        }:
-            module = "reader3"
-        return super().find_class(module, name)
-
-
-def load_from_pickle(pkl_path: str) -> Book:
-    with open(pkl_path, "rb") as f:
-        return _CompatUnpickler(f).load()

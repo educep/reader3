@@ -2,6 +2,7 @@ import contextlib
 import json
 import logging
 import os
+import pickle
 import re
 import shutil
 import tempfile
@@ -22,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from reader3 import Book, llm, load_from_pickle, notebook, process_epub, save_to_pickle
+from reader3 import Book, llm, notebook, process_epub, save_to_pickle
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,9 @@ def load_book_cached(folder_name: str) -> Book | None:
         return None
 
     try:
-        return load_from_pickle(file_path)
+        with open(file_path, "rb") as f:
+            book = pickle.load(f)
+        return book
     except Exception:
         logger.exception("Error loading book %s", folder_name)
         return None
