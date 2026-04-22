@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from reader3 import Book, llm, process_epub, save_to_pickle  # type: ignore[attr-defined]
+from reader3 import Book, llm, notebook, process_epub, save_to_pickle  # type: ignore[attr-defined]
 
 app = FastAPI()
 os.makedirs("static", exist_ok=True)
@@ -231,6 +231,106 @@ async def chat_endpoint(request: ChatRequest):
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
+
+
+# ── Notebook routes ──────────────────────────────────────────────
+
+
+@app.get("/notebook/{book_id}/entries")
+async def list_notebook_entries(
+    book_id: str,
+    chapter_index: int | None = None,
+    type: str | None = None,
+):
+    safe_id = os.path.basename(book_id)
+    if not load_book_cached(safe_id):
+        raise HTTPException(status_code=404, detail="Book not found")
+    entries = notebook.list_entries(safe_id, chapter_index=chapter_index, entry_type=type)
+    return {"entries": entries}
+
+
+@app.post("/notebook/{book_id}/entries", status_code=201)
+async def create_notebook_entry(book_id: str, request: Request):
+    safe_id = os.path.basename(book_id)
+    if not load_book_cached(safe_id):
+        raise HTTPException(status_code=404, detail="Book not found")
+    body = await request.json()
+    try:
+        entry = notebook.create_entry(safe_id, body, get_book=load_book_cached)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
+    return entry
+
+
+@app.patch("/notebook/{book_id}/entries/{entry_id}")
+async def patch_notebook_entry(book_id: str, entry_id: str, request: Request):
+    safe_id = os.path.basename(book_id)
+    if not load_book_cached(safe_id):
+        raise HTTPException(status_code=404, detail="Book not found")
+    patch = await request.json()
+    updated = notebook.update_entry(safe_id, entry_id, patch)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return updated
+
+
+@app.delete("/notebook/{book_id}/entries/{entry_id}", status_code=204)
+async def delete_notebook_entry(book_id: str, entry_id: str):
+    safe_id = os.path.basename(book_id)
+    if not load_book_cached(safe_id):
+        raise HTTPException(status_code=404, detail="Book not found")
+    found = notebook.delete_entry(safe_id, entry_id)
+    if not found:
+        raise HTTPException(status_code=404, detail="Entry not found")
+
+
+@app.get("/notebook/{book_id}", response_class=HTMLResponse)
+async def notebook_digest(request: Request, book_id: str):
+    safe_id = os.path.basename(book_id)
+    book = load_book_cached(safe_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    data = notebook.load(safe_id)
+    from collections import defaultdict
+
+    grouped: dict[int | str, list] = defaultdict(list)
+    for entry in data.get("entries", []):
+        lvl = entry.get("scope", {}).get("level", "book")
+        if lvl == "book":
+            grouped["book"].append(entry)
+        else:
+            ci = entry.get("scope", {}).get("chapter_index", 0)
+            grouped[ci].append(entry)
+    return templates.TemplateResponse(
+        request,
+        "digest.html",
+        {"book": book, "book_id": safe_id, "grouped": dict(grouped)},
+    )
+
+
+@app.get("/notebook/{book_id}/export.md")
+async def export_notebook_md(book_id: str):
+    from fastapi.responses import Response
+
+    safe_id = os.path.basename(book_id)
+    book = load_book_cached(safe_id)
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+    data = notebook.load(safe_id)
+    lines = [f"# {book.metadata.title} — Bitácora\n\n"]
+    for entry in data.get("entries", []):
+        scope = entry.get("scope", {})
+        ch = scope.get("chapter_index", "")
+        label = f"Chapter {ch + 1}" if isinstance(ch, int) else "Book"
+        etype = entry.get("type", "note").capitalize()
+        lines.append(f"## [{etype}] — {label}\n\n")
+        lines.append(entry.get("body", "") + "\n\n---\n\n")
+    content = "".join(lines)
+    return Response(
+        content=content,
+        media_type="text/markdown",
+        headers={"content-disposition": f'attachment; filename="{safe_id}-notebook.md"'},
+    )
 
 
 if __name__ == "__main__":

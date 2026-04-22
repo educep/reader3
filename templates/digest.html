@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.metadata.title }} — Bitácora · reader 3</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- marked and DOMPurify for client-side markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --paper: #f3ecdd;
+            --paper-shade: #ebe2cf;
+            --paper-deep: #e4d9c0;
+            --ink: #1a1512;
+            --ink-soft: #4a3f36;
+            --ink-mute: #8a7a67;
+            --rule: #c9bda4;
+            --oxblood: #8b2635;
+            --oxblood-ink: #6b1d28;
+            --gold: #b08842;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { margin: 0; padding: 0; }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: "Fraunces", Georgia, serif;
+            font-optical-sizing: auto;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(1200px 600px at 10% -10%, rgba(176, 136, 66, 0.10), transparent 60%),
+                radial-gradient(900px 500px at 100% 110%, rgba(139, 38, 53, 0.08), transparent 55%),
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.08  0 0 0 0 0.06  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+            background-attachment: fixed;
+        }
+
+        .page {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 72px 48px 120px;
+        }
+
+        /* ---- MASTHEAD ---- */
+        .masthead {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: end;
+            gap: 32px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--ink);
+            position: relative;
+        }
+        .masthead::after {
+            content: "";
+            position: absolute;
+            left: 0; right: 0; bottom: -6px;
+            height: 1px;
+            background: var(--ink);
+            opacity: 0.45;
+        }
+        .brand-kicker {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            margin-bottom: 8px;
+        }
+        h1.title {
+            font-family: "Fraunces", serif;
+            font-variation-settings: "opsz" 144;
+            font-weight: 500;
+            font-size: clamp(36px, 6vw, 80px);
+            line-height: 0.9;
+            letter-spacing: -0.03em;
+            margin: 0 0 10px;
+            color: var(--ink);
+        }
+        .subtitle {
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 16px;
+            color: var(--ink-soft);
+            margin: 6px 0 0;
+            letter-spacing: -0.01em;
+        }
+        .masthead-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .action-link {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-soft);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: color 180ms ease, border-color 180ms ease;
+            white-space: nowrap;
+        }
+        .action-link:hover {
+            color: var(--oxblood);
+            border-color: var(--oxblood);
+        }
+
+        /* ---- TWO-COLUMN DIGEST LAYOUT ---- */
+        .digest-layout {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 48px;
+            margin-top: 48px;
+            align-items: start;
+        }
+        @media (max-width: 760px) {
+            .digest-layout { grid-template-columns: 1fr; }
+            .digest-nav { display: flex; flex-wrap: wrap; gap: 8px; }
+        }
+
+        /* ---- NAV SIDEBAR ---- */
+        .digest-nav {
+            position: sticky;
+            top: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .nav-label {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 9px;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--rule);
+        }
+        .nav-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: var(--ink-soft);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+        }
+        .nav-item:hover {
+            color: var(--oxblood);
+            border-left-color: var(--oxblood);
+            background: rgba(139, 38, 53, 0.04);
+        }
+        .nav-count {
+            font-size: 10px;
+            color: var(--ink-mute);
+            background: var(--paper-shade);
+            padding: 1px 6px;
+            border-radius: 0;
+        }
+
+        /* ---- MAIN CONTENT ---- */
+        .digest-main {
+            display: flex;
+            flex-direction: column;
+            gap: 56px;
+        }
+
+        /* ---- ENTRY GROUP ---- */
+        .entry-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .group-title {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            font-size: 26px;
+            letter-spacing: -0.02em;
+            margin: 0 0 4px;
+            color: var(--ink);
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--ink);
+        }
+        .group-subtitle {
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-weight: 400;
+            font-size: 16px;
+            color: var(--ink-soft);
+            letter-spacing: -0.01em;
+        }
+
+        /* ---- ENTRY CARD ---- */
+        .entry-card {
+            padding: 24px 0 22px;
+            border-bottom: 1px solid var(--rule);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .entry-card:last-child {
+            border-bottom: none;
+        }
+        .entry-meta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+        .entry-type {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--paper);
+            background: var(--ink);
+            padding: 2px 7px;
+        }
+        .entry-type[data-type="note"]      { background: var(--ink); }
+        .entry-type[data-type="highlight"] { background: var(--gold); }
+        .entry-type[data-type="diagram"]   { background: var(--oxblood); }
+        .entry-type[data-type="question"]  { background: var(--ink-soft); }
+        .entry-origin {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+        }
+        .entry-time {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.10em;
+            color: var(--ink-mute);
+            margin-left: auto;
+        }
+
+        /* ---- SELECTION QUOTE ---- */
+        .entry-selection {
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-size: 15px;
+            line-height: 1.65;
+            color: var(--ink-soft);
+            margin: 0;
+            padding: 10px 18px;
+            border-left: 3px solid var(--oxblood);
+            background: rgba(139, 38, 53, 0.04);
+        }
+
+        /* ---- ENTRY BODY (rendered markdown) ---- */
+        .entry-body {
+            font-family: "Fraunces", serif;
+            font-size: 16px;
+            line-height: 1.7;
+            color: var(--ink);
+        }
+        .entry-body p { margin: 0 0 0.85em; }
+        .entry-body p:last-child { margin-bottom: 0; }
+        .entry-body h1, .entry-body h2, .entry-body h3 {
+            font-family: "Fraunces", serif;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin: 1.2em 0 0.4em;
+            color: var(--ink);
+        }
+        .entry-body code {
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 13px;
+            background: var(--paper-shade);
+            padding: 2px 5px;
+            color: var(--ink);
+        }
+        .entry-body pre {
+            background: var(--paper-deep);
+            padding: 16px;
+            overflow-x: auto;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+        .entry-body a {
+            color: var(--oxblood);
+        }
+        .entry-body ul, .entry-body ol {
+            padding-left: 1.4em;
+            margin: 0.5em 0 0.85em;
+        }
+        .entry-body li { margin-bottom: 0.3em; }
+        .entry-body blockquote {
+            margin: 0;
+            padding: 8px 16px;
+            border-left: 3px solid var(--rule);
+            color: var(--ink-soft);
+            font-style: italic;
+        }
+
+        /* ---- MERMAID DIAGRAMS ---- */
+        .mermaid {
+            background: var(--paper-shade);
+            padding: 24px;
+            overflow-x: auto;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* ---- EMPTY STATE ---- */
+        .empty-state {
+            padding: 60px 24px;
+            border: 1px dashed var(--rule);
+            text-align: center;
+            font-family: "Fraunces", serif;
+            font-style: italic;
+            font-size: 18px;
+            color: var(--ink-soft);
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 96px;
+            padding-top: 18px;
+            border-top: 1px solid var(--rule);
+            display: flex;
+            justify-content: space-between;
+            font-family: "IBM Plex Mono", monospace;
+            font-size: 10px;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            color: var(--ink-mute);
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        <header class="masthead">
+            <div>
+                <div class="brand-kicker">Bitácora &middot; Reading Notebook</div>
+                <h1 class="title">{{ book.metadata.title }}</h1>
+                {% if book.metadata.authors %}
+                <p class="subtitle">{{ book.metadata.authors | join(', ') }}</p>
+                {% endif %}
+            </div>
+            <div class="masthead-actions">
+                <a href="/read/{{ book_id }}" class="action-link">← Back to reader</a>
+                <a href="/notebook/{{ book_id }}/export.md" class="action-link">Export as Markdown ↓</a>
+            </div>
+        </header>
+
+        <div class="digest-layout">
+
+            <!-- Left: chapter nav -->
+            <nav class="digest-nav">
+                <div class="nav-label">Contents</div>
+                {% if 'book' in grouped %}
+                <a href="#book-level" class="nav-item">
+                    Book-level
+                    <span class="nav-count">{{ grouped['book'] | length }}</span>
+                </a>
+                {% endif %}
+                {% for ch_idx, entries in grouped.items() %}
+                    {% if ch_idx != 'book' %}
+                    <a href="#chapter-{{ ch_idx }}" class="nav-item">
+                        Ch.&nbsp;{{ ch_idx + 1 }}
+                        <span class="nav-count">{{ entries | length }}</span>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+
+            <!-- Right: entry groups -->
+            <main class="digest-main">
+
+                {% if 'book' in grouped %}
+                <section id="book-level" class="entry-group">
+                    <h2 class="group-title">Book-level notes</h2>
+                    {% for entry in grouped['book'] %}
+                    <article class="entry-card">
+                        <div class="entry-meta">
+                            <span class="entry-type" data-type="{{ entry.type }}">{{ entry.type }}</span>
+                            {% if entry.origin is defined and entry.origin %}
+                            <span class="entry-origin">{{ entry.origin }}</span>
+                            {% endif %}
+                            <time class="entry-time">{{ entry.created_at[:10] }}</time>
+                        </div>
+                        {% if entry.type == 'diagram' %}
+                        <pre class="mermaid">{{ entry.body }}</pre>
+                        {% else %}
+                        <div class="entry-body" data-raw="{{ entry.body | e }}"></div>
+                        {% endif %}
+                    </article>
+                    {% endfor %}
+                </section>
+                {% endif %}
+
+                {% for ch_idx in grouped.keys() | sort %}
+                    {% if ch_idx != 'book' %}
+                    <section id="chapter-{{ ch_idx }}" class="entry-group">
+                        <h2 class="group-title">
+                            Chapter {{ ch_idx + 1 }}
+                            {% if ch_idx < book.spine | length %}
+                            <span class="group-subtitle">{{ book.spine[ch_idx].title }}</span>
+                            {% endif %}
+                        </h2>
+                        {% for entry in grouped[ch_idx] %}
+                        <article class="entry-card">
+                            <div class="entry-meta">
+                                <span class="entry-type" data-type="{{ entry.type }}">{{ entry.type }}</span>
+                                {% if entry.origin is defined and entry.origin %}
+                                <span class="entry-origin">{{ entry.origin }}</span>
+                                {% endif %}
+                                <time class="entry-time">{{ entry.created_at[:10] }}</time>
+                            </div>
+                            {% if entry.scope is defined and entry.scope.selection is defined and entry.scope.selection.text is defined %}
+                            <blockquote class="entry-selection">{{ entry.scope.selection.text }}</blockquote>
+                            {% endif %}
+                            {% if entry.type == 'diagram' %}
+                            <pre class="mermaid">{{ entry.body }}</pre>
+                            {% else %}
+                            <div class="entry-body" data-raw="{{ entry.body | e }}"></div>
+                            {% endif %}
+                        </article>
+                        {% endfor %}
+                    </section>
+                    {% endif %}
+                {% endfor %}
+
+                {% if not grouped %}
+                <p class="empty-state">No notes yet. Select text in the reader and use the Notebook tab to add entries.</p>
+                {% endif %}
+
+            </main>
+        </div>
+
+        <footer>
+            <span>reader 3 &middot; bitácora</span>
+            <span>Serif set in Fraunces</span>
+        </footer>
+    </div>
+
+    <!-- Mermaid for diagram entries -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js" crossorigin="anonymous"></script>
+    <script>
+        // Render markdown in .entry-body elements
+        document.querySelectorAll('.entry-body[data-raw]').forEach(el => {
+            const raw = el.getAttribute('data-raw');
+            el.removeAttribute('data-raw');
+            el.innerHTML = DOMPurify.sanitize(marked.parse(raw));
+        });
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+    </script>
+</body>
+</html>
