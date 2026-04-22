@@ -28,6 +28,13 @@ Two-stage pipeline: **ingest → on-disk pickle → FastAPI server**. The ingest
 - Env vars: `ANTHROPIC_API_KEY` (required for chat; server boots without it), `READER3_MODEL` (optional, default `claude-sonnet-4-6`).
 - System prompt assembled server-side; client never supplies it.
 
+### Phase 2: Bitácora (added 2026-04-22)
+- `notebook.json` sidecar at `books/<id>/notebook.json` — one file per book, human-readable JSON with schema_version 1.
+- `filelock` dependency: prevents torn writes when entries are saved rapidly.
+- New files: `reader3/notebook.py` (CRUD + validation), `static/notebook.js`, `static/notebook.css`, `static/digest.js`, `templates/digest.html`.
+- New routes: `GET/POST /notebook/{book_id}/entries`, `PATCH/DELETE /notebook/{book_id}/entries/{id}`, `GET /notebook/{book_id}` (digest HTML), `GET /notebook/{book_id}/export.md`.
+- Note: notebook writes do NOT mutate `book.pkl`, so `load_book_cached.cache_clear()` is NOT needed for notebook operations.
+
 - **`server.py`** — FastAPI app on `127.0.0.1:8123`.
   - `GET /` → library shelf (editorial-styled template with Fraunces + IBM Plex Mono from Google Fonts).
   - `POST /upload` → accepts an `.epub` via `UploadFile`, writes to a `NamedTemporaryFile`, calls `process_epub` + `save_to_pickle` into `books/<basename>_data/`, **clears** `load_book_cached.cache_clear()`, returns JSON `{ok, book_id, title, author, chapters}`. Rejects non-`.epub` with 400; parse failures return 500 with `{"error": ...}`. Requires `python-multipart` (already in deps).

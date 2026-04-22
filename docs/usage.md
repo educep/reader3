@@ -93,6 +93,46 @@ export READER3_MODEL=claude-opus-4-5
 ### Graceful degradation
 If `ANTHROPIC_API_KEY` is not set, the reader continues to work normally. The chat action buttons in the selection toolbar are disabled and show a tooltip. Check `GET /chat/health` to verify key status.
 
+## Taking notes
+
+reader3 includes a **Notebook** (bitácora) attached to each book. Notes are stored in `books/<id>/notebook.json` alongside `book.pkl` — plain JSON you can open, edit, or back up with any text editor.
+
+### Opening the Notebook tab
+
+1. Open any book and navigate to a chapter.
+2. In the right-hand side panel (the same panel used for chat), click the **Notebook** tab. The tab is always visible whether or not `ANTHROPIC_API_KEY` is set.
+
+### Creating a note manually
+
+1. With the Notebook tab open, click **+ New entry** (or the compose icon) at the top of the pane.
+2. Choose a **type**: Note, Summary, Bullets, Quote, Question, or Diagram.
+3. The scope defaults to the current chapter. You can change it to *Whole book* if the note applies broadly.
+4. Type your content in the text area (Markdown supported). Diagram entries are rendered with Mermaid client-side.
+5. Click **Save**. The entry appears in the list immediately.
+
+### Using "Save to Notebook" on chat replies
+
+After the LLM streams a reply in the Chat tab:
+
+1. Click the **Save to Notebook** button that appears below the response.
+2. A pre-filled composer opens with `origin: llm`, the model name recorded, and the reply as the body.
+3. Adjust the type and tags if needed, then click **Save**.
+
+### Saving a selection-scoped entry
+
+1. Select a passage of text in the chapter body.
+2. The floating selection toolbar appears. Click **Add to Notebook**.
+3. The composer opens with `scope.level: selection`, the selected text pre-filled, and `char_start`/`char_end` recorded.
+4. Add a body (optional — the selection text alone is enough for a `quote` entry), choose a type, and click **Save**.
+
+### Viewing the full digest
+
+Navigate to `/notebook/<book_id>` (e.g. `http://localhost:8123/notebook/dracula_data`) for a full-page read-only view of all entries grouped by chapter. This is useful for a quick "what did I note about this book?" overview.
+
+### Exporting as Markdown
+
+Visit `/notebook/<book_id>/export.md` to download all entries as a single Markdown file grouped by chapter. The file is named `<book_id>_notebook.md` and uses standard Markdown so it opens in any editor.
+
 ## Troubleshooting
 
 **"No processed books found" / the shelf is empty.**

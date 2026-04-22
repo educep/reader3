@@ -42,7 +42,16 @@ If you see a 404 on an image after ingest, it almost always means the `src` in t
 
 Rough shortlist of features that fit the current architecture:
 
-- [ ] **Selection-aware LLM chat** — let the user highlight any passage in the chapter, then open a side panel (or modal) to chat with an LLM about just that selection. The LLM should receive the selected text as context and be able to explain it, answer follow-ups, or discuss. Needs: (a) a selection toolbar that appears on `mouseup` when `window.getSelection()` is non-empty, (b) a chat pane with message history scoped to the selection, (c) a server-side proxy endpoint (`POST /chat`) that forwards to an LLM API so the API key stays off the client. Consider whether the "Copy Full Text" button should become a menu alongside "Discuss with LLM" and "Explain Selection".
+### Primary goal — Read *with* an LLM and keep a "bitácora"
+
+Two connected features that define where the project is heading:
+
+- [x] **Selection-aware LLM chat** ✓ — Implemented in Phase 1 (2026-04-22). Selection toolbar appears on `mouseup`; right-hand side panel streams replies via `POST /chat` (SSE); API key stays server-side. Actions: *Explain*, *Summarize*, *Translate*, *Discuss*, *Free chat*. See `reader3/llm.py`, `static/side_panel.js`, `static/side_panel.css`.
+
+- [x] **Bitácora / Reading Notebook** ✓ — Implemented in Phase 2 (2026-04-22). `books/<id>/notebook.json` sidecar stores entries with scope, type, body, origin, tags, and timestamps. Notebook tab in the side panel; `GET/POST/PATCH/DELETE /notebook/{book_id}/entries[/{id}]`; digest view at `/notebook/{book_id}`; Markdown export at `/notebook/{book_id}/export.md`. See `reader3/notebook.py`, `static/notebook.js`, `static/notebook.css`, `static/digest.js`, `templates/digest.html`.
+
+### Smaller features that fit the architecture
+
 - [ ] **Reading position** — persist "last chapter read" per book. Easiest: write a small JSON sidecar next to `book.pkl`, read it in the library scan, show a "Resume" button.
 - [ ] **Delete-from-UI** — `DELETE /book/{book_id}` that `shutil.rmtree`s the folder and clears the cache. The dropzone already proves multipart + cache-clear works.
 - [ ] **Cover thumbnails on the shelf** — most EPUBs have `ITEM_COVER`; after ingest, the cover lives at `books/<id>/images/cover.jpg` (or similar). Pick the first matching file and show it on the card.
