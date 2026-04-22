@@ -58,6 +58,33 @@ curl -F "file=@dracula.epub" http://127.0.0.1:8123/upload
 - The template receives `book`, `current_chapter`, `chapter_index`, `book_id`, `prev_idx`, `next_idx`.
 - `prev_idx` is `None` at index 0; `next_idx` is `None` at the last chapter.
 
+## Chat endpoints
+
+### `GET /chat/health`
+Returns the current chat capability status.
+**Response**: `{"ok": bool, "model": str, "has_key": bool}`
+- `ok`: `true` if `ANTHROPIC_API_KEY` is set and chat is available.
+- `model`: the model that will be used (default `claude-sonnet-4-6`, overridable via `READER3_MODEL`).
+- `has_key`: `true` if the API key is present in the environment.
+
+### `POST /chat`
+Streams an LLM reply as Server-Sent Events.
+**Request body** (JSON):
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `book_id` | string | yes | Book folder name (e.g. `mypbook_data`) |
+| `chapter_index` | int | yes | Zero-based spine index |
+| `selection` | string | no | Selected passage text |
+| `action` | string | yes | One of: `explain`, `summarize`, `translate`, `discuss`, `free` |
+| `messages` | array | yes | Prior turns: `[{"role": "user"/"assistant", "content": "..."}]` |
+
+**Response**: `text/event-stream`. Each event:
+- Token event: `data: {"token": "<text>"}`
+- Done event: `data: {"done": true}`
+- Error event: `data: {"error": "<message>"}`
+
+**Error codes**: 404 (book not found), 422 (chapter_index out of range), 503 (ANTHROPIC_API_KEY not set).
+
 ## `GET /read/{book_id}/images/{image_name}`
 
 Serves a file from `books/<book_id>/images/<image_name>`. Both path segments go through `os.path.basename` before being joined, so `../` traversal is blocked. Returns `404` if the file doesn't exist.

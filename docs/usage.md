@@ -66,6 +66,33 @@ reader3/
 └── docs/                 # you are here
 ```
 
+## Chatting with the LLM
+
+### Prerequisites
+Set your Anthropic API key before starting the server:
+```bash
+# macOS / Linux
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# Windows (PowerShell)
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+
+# Optional: override the model (default: claude-sonnet-4-6)
+export READER3_MODEL=claude-opus-4-5
+```
+
+### How to use
+1. Start the server: `uv run server.py`
+2. Open any book and navigate to a chapter.
+3. Select any passage of text with your mouse.
+4. A floating toolbar appears — click **Explain**, **Summarize**, **Translate**, or **Discuss**.
+5. The right-hand side panel opens with your selection quoted and an LLM reply streaming in.
+6. Ask follow-up questions in the chat input at the bottom. History is kept for the session.
+7. Click **New conversation** to clear history and start fresh.
+
+### Graceful degradation
+If `ANTHROPIC_API_KEY` is not set, the reader continues to work normally. The chat action buttons in the selection toolbar are disabled and show a tooltip. Check `GET /chat/health` to verify key status.
+
 ## Troubleshooting
 
 **"No processed books found" / the shelf is empty.**

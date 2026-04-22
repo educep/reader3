@@ -4,6 +4,10 @@ Lightweight self-hosted **EPUB** reader. Users ingest an `.epub` (CLI or browser
 
 > Full human-readable docs live under [`docs/`](docs/README.md) — `architecture.md`, `usage.md`, `api.md`, `extending.md`.
 
+## Documentation lookups
+
+Use the Context7 MCP for up-to-date docs on any third-party library before writing or reviewing code that calls it. Two steps: `resolve-library-id` then `query-docs`. See `.claude/skills/context7-docs/SKILL.md` for the library name table, examples, and the "when to use / when to skip" rules. Required for FastAPI, Starlette, Jinja2, ebooklib, BeautifulSoup, anthropic SDK, marked, DOMPurify, mermaid; skip for stdlib-only work.
+
 ## Architecture
 
 Two-stage pipeline: **ingest → on-disk pickle → FastAPI server**. The ingester is shared by both entry points (CLI and upload endpoint).
@@ -17,6 +21,12 @@ Two-stage pipeline: **ingest → on-disk pickle → FastAPI server**. The ingest
   - CLI: `uv run reader3.py path/to/book.epub` → always writes to `books/<basename>_data/` regardless of where the source file lives (only basename is used; `books/` is created if missing).
   - Image extraction covers **both** `ITEM_IMAGE` and `ITEM_COVER` — older EPUBs that only tag covers as `ITEM_COVER` (e.g. `src="image/cover.jpg"`) rely on this or they 404.
   - The image map uses **two keys** per image: full internal EPUB path and bare basename. This is deliberate — `<img src>` attributes in the wild are messy (URL-encoded, `../`-prefixed, inconsistent casing), and the double key makes rewriting robust.
+
+### Phase 1: Chat (added 2026-04-22)
+- New routes: `GET /chat/health`, `POST /chat` (SSE stream).
+- New files: `reader3/llm.py` (Anthropic streaming helper), `static/side_panel.js`, `static/side_panel.css`, `templates/partials/side_panel.html`.
+- Env vars: `ANTHROPIC_API_KEY` (required for chat; server boots without it), `READER3_MODEL` (optional, default `claude-sonnet-4-6`).
+- System prompt assembled server-side; client never supplies it.
 
 - **`server.py`** — FastAPI app on `127.0.0.1:8123`.
   - `GET /` → library shelf (editorial-styled template with Fraunces + IBM Plex Mono from Google Fonts).
