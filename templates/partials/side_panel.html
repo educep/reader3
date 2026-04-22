@@ -1,0 +1,40 @@
+<!-- Side Panel: Chat + Notebook (Phase 1 — Notebook tab disabled) -->
+<div id="sidePanel" class="side-panel side-panel--closed" aria-label="Assistant panel">
+  <div class="sp-header">
+    <div class="sp-tabs" role="tablist">
+      <button class="sp-tab sp-tab--active" id="tabChat" role="tab" aria-selected="true" aria-controls="chatPane">Chat</button>
+      <button class="sp-tab sp-tab--disabled" id="tabNotebook" role="tab" aria-selected="false" aria-disabled="true" tabindex="-1" title="Coming in Phase 2">Notebook</button>
+    </div>
+    <button class="sp-close" id="spCloseBtn" aria-label="Close panel">✕</button>
+  </div>
+
+  <!-- Chat Pane -->
+  <div id="chatPane" class="sp-pane" role="tabpanel" aria-labelledby="tabChat">
+    <div id="selectionQuote" class="sp-quote sp-quote--hidden">
+      <span class="sp-quote-label">Selected passage</span>
+      <blockquote id="selectionQuoteText"></blockquote>
+      <button class="sp-quote-clear" id="clearQuoteBtn" aria-label="Clear selection">✕</button>
+    </div>
+    <div id="messageList" class="sp-messages" aria-live="polite" aria-label="Chat messages"></div>
+    <div class="sp-input-row">
+      <textarea id="chatInput" class="sp-input" placeholder="Ask a follow-up question… (Enter to send, Shift+Enter for newline)" rows="2"></textarea>
+      <button id="chatSubmit" class="sp-submit" aria-label="Send message">→</button>
+    </div>
+    <div class="sp-footer">
+      <button id="newConversationBtn" class="sp-new-convo">New conversation</button>
+    </div>
+  </div>
+
+  <!-- Notebook Pane (Phase 2 placeholder) -->
+  <div id="notebookPane" class="sp-pane sp-pane--hidden" role="tabpanel" aria-labelledby="tabNotebook">
+    <p class="sp-coming-soon">Notebook — coming in Phase 2.</p>
+  </div>
+</div>
+
+<!-- Selection Toolbar -->
+<div id="selectionToolbar" class="sel-toolbar sel-toolbar--hidden" role="toolbar" aria-label="Text actions">
+  <button class="sel-action" data-action="explain">Explain</button>
+  <button class="sel-action" data-action="summarize">Summarize</button>
+  <button class="sel-action" data-action="translate">Translate</button>
+  <button class="sel-action" data-action="discuss">Discuss</button>
+</div>
