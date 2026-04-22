@@ -1,0 +1,307 @@
+/* notebook.css — Notebook tab, entry cards, composer, margin marks */
+
+/* ── Sub-view strip ──────────────────────────────────────────────────────── */
+.nb-subviews {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.nb-subview-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 160ms ease, border-color 160ms ease;
+  white-space: nowrap;
+}
+
+.nb-subview-btn:hover {
+  color: var(--ink-soft);
+}
+
+.nb-subview-btn--active {
+  color: var(--oxblood);
+  border-bottom-color: var(--oxblood);
+}
+
+/* ── Views ───────────────────────────────────────────────────────────────── */
+.nb-view {
+  padding: 0 4px;
+}
+
+.nb-view--hidden {
+  display: none;
+}
+
+/* ── Breadcrumb ──────────────────────────────────────────────────────────── */
+.nb-breadcrumb {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  margin-bottom: 10px;
+  padding: 4px 0;
+}
+
+/* ── Entry list ──────────────────────────────────────────────────────────── */
+.nb-entry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 8px;
+}
+
+.nb-empty {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  color: var(--ink-mute);
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* ── Entry card ──────────────────────────────────────────────────────────── */
+.nb-entry-card {
+  position: relative;
+  border-left: 2px solid var(--rule);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--paper);
+  transition: border-left-color 160ms ease;
+}
+
+.nb-entry-card:hover {
+  border-left-color: var(--oxblood);
+}
+
+/* ── Type badge ──────────────────────────────────────────────────────────── */
+.nb-entry-type {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  background: var(--paper-shade);
+  color: var(--ink-soft);
+  padding: 2px 6px;
+  margin-bottom: 6px;
+}
+
+/* ── Entry meta ──────────────────────────────────────────────────────────── */
+.nb-entry-meta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+/* ── Entry body ──────────────────────────────────────────────────────────── */
+.nb-entry-body {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+.nb-entry-body p { margin: 0 0 0.7em; }
+.nb-entry-body p:last-child { margin-bottom: 0; }
+.nb-entry-body pre { overflow-x: auto; }
+
+/* ── Delete button ───────────────────────────────────────────────────────── */
+.nb-entry-delete {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink-mute);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 160ms ease;
+}
+
+.nb-entry-delete:hover {
+  color: var(--oxblood);
+}
+
+/* ── Add entry button ────────────────────────────────────────────────────── */
+.nb-add-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.nb-add-btn:hover {
+  color: var(--oxblood);
+  border-color: var(--oxblood);
+}
+
+/* ── Composer ────────────────────────────────────────────────────────────── */
+.nb-composer {
+  border-top: 1px solid var(--rule);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.nb-composer--hidden {
+  display: none;
+}
+
+#nbTypeSelect,
+.nb-type-select {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--paper-shade);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 5px 8px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.nb-body {
+  width: 100%;
+  font-family: "Fraunces", serif;
+  font-size: 14px;
+  line-height: 1.55;
+  background: var(--paper-deep);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 8px;
+  resize: vertical;
+  transition: border-color 160ms ease;
+}
+
+.nb-body:focus {
+  outline: none;
+  border-color: var(--oxblood);
+}
+
+.nb-composer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nb-save-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: var(--oxblood);
+  color: var(--paper);
+  border: 1px solid var(--oxblood);
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: opacity 160ms ease;
+  flex: 1;
+}
+
+.nb-save-btn:hover {
+  opacity: 0.85;
+}
+
+.nb-cancel-btn {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  background: none;
+  color: var(--ink-mute);
+  border: 1px solid var(--rule);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.nb-cancel-btn:hover {
+  color: var(--oxblood);
+  border-color: var(--oxblood);
+}
+
+/* ── Filters (index view) ────────────────────────────────────────────────── */
+.nb-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.nb-filters select {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--paper-shade);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  padding: 4px 6px;
+  cursor: pointer;
+  flex: 1;
+}
+
+/* ── Margin marks ────────────────────────────────────────────────────────── */
+.margin-mark {
+  position: absolute;
+  left: -24px;
+  color: var(--oxblood);
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+  transition: opacity 160ms ease;
+  user-select: none;
+  line-height: 1.75;
+}
+
+.margin-mark:hover {
+  opacity: 1;
+}
+
+/* ── Save to Notebook button on chat bubbles ─────────────────────────────── */
+.msg-save-nb {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--ink-mute);
+  padding: 3px 8px;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.msg-save-nb:hover {
+  border-color: var(--oxblood);
+  color: var(--oxblood);
+}

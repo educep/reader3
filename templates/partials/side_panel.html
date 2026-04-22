@@ -3,7 +3,7 @@
   <div class="sp-header">
     <div class="sp-tabs" role="tablist">
       <button class="sp-tab sp-tab--active" id="tabChat" role="tab" aria-selected="true" aria-controls="chatPane">Chat</button>
-      <button class="sp-tab sp-tab--disabled" id="tabNotebook" role="tab" aria-selected="false" aria-disabled="true" tabindex="-1" title="Coming in Phase 2">Notebook</button>
+      <button class="sp-tab" id="tabNotebook" role="tab" aria-selected="false">Notebook</button>
     </div>
     <button class="sp-close" id="spCloseBtn" aria-label="Close panel">✕</button>
   </div>
@@ -25,9 +25,49 @@
     </div>
   </div>
 
-  <!-- Notebook Pane (Phase 2 placeholder) -->
+  <!-- Notebook Pane -->
   <div id="notebookPane" class="sp-pane sp-pane--hidden" role="tabpanel" aria-labelledby="tabNotebook">
-    <p class="sp-coming-soon">Notebook — coming in Phase 2.</p>
+    <!-- Sub-view selector -->
+    <div class="nb-subviews" role="tablist">
+      <button class="nb-subview-btn nb-subview-btn--active" data-view="scope">Current scope</button>
+      <button class="nb-subview-btn" data-view="index">Book index</button>
+      <a class="nb-subview-btn" id="digestLink" href="#" target="_blank">Full digest ↗</a>
+    </div>
+
+    <!-- Current scope view -->
+    <div id="nbViewScope" class="nb-view">
+      <div id="nbScopeBreadcrumb" class="nb-breadcrumb"></div>
+      <div id="nbEntryList" class="nb-entry-list"></div>
+      <button class="nb-add-btn" id="nbAddBtn">+ New entry</button>
+    </div>
+
+    <!-- Book index view -->
+    <div id="nbViewIndex" class="nb-view nb-view--hidden">
+      <div class="nb-filters">
+        <select id="nbTypeFilter"><option value="">All types</option>
+          <option>note</option><option>summary</option><option>bullets</option>
+          <option>diagram</option><option>quote</option><option>question</option>
+        </select>
+        <select id="nbOriginFilter"><option value="">All origins</option>
+          <option>human</option><option>llm</option>
+        </select>
+      </div>
+      <div id="nbIndexList" class="nb-entry-list"></div>
+    </div>
+
+    <!-- Entry composer (shown/hidden) -->
+    <div id="nbComposer" class="nb-composer nb-composer--hidden">
+      <select id="nbTypeSelect">
+        <option value="note">Note</option><option value="summary">Summary</option>
+        <option value="bullets">Bullets</option><option value="diagram">Diagram (Mermaid)</option>
+        <option value="quote">Quote</option><option value="question">Question</option>
+      </select>
+      <textarea id="nbBodyInput" class="nb-body" placeholder="Write in Markdown…" rows="5"></textarea>
+      <div class="nb-composer-actions">
+        <button id="nbSaveBtn" class="nb-save-btn">Save entry</button>
+        <button id="nbCancelBtn" class="nb-cancel-btn">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 

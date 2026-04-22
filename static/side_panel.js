@@ -169,6 +169,15 @@ async function streamResponse(action, selection) {
           bubble.innerHTML = html;
           bubble.classList.remove('msg-streaming');
           messages.push({ role: 'assistant', content: rawText });
+          // Store raw text and append Save to Notebook button
+          bubble.dataset.raw = rawText;
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'msg-save-nb';
+          saveBtn.textContent = 'Save to Notebook';
+          saveBtn.addEventListener('click', () => {
+            window.openNotebookComposerWithText && window.openNotebookComposerWithText(rawText);
+          });
+          bubble.appendChild(saveBtn);
         }
         if (payload.error) {
           bubble.textContent = 'Error: ' + payload.error;
