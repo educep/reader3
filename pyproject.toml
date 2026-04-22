@@ -9,6 +9,7 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "ebooklib>=0.20",
     "fastapi>=0.121.2",
+    "filelock>=3.16.1",
     "jinja2>=3.1.6",
     "python-multipart>=0.0.26",
     "uvicorn>=0.38.0",
@@ -40,7 +41,7 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["reader3.py", "server.py", "reader3/llm.py"]
+files = ["reader3.py", "server.py", "reader3/llm.py", "reader3/notebook.py"]
 # Pragmatic: catch real bugs without forcing exhaustive annotations.
 check_untyped_defs = true
 warn_unused_ignores = true
@@ -49,7 +50,7 @@ warn_unreachable = true
 no_implicit_optional = true
 # ebooklib and bs4 ship no stubs.
 [[tool.mypy.overrides]]
-module = ["ebooklib", "ebooklib.*", "bs4", "bs4.*", "uvicorn"]
+module = ["ebooklib", "ebooklib.*", "bs4", "bs4.*", "uvicorn", "filelock"]
 ignore_missing_imports = true
 # reader3.py (script) and reader3/ (package) share a name; mypy resolves the
 # package and cannot see symbols defined in reader3.py. Suppress attr errors.
