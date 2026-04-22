@@ -10,6 +10,7 @@ This folder contains the human-readable docs for understanding and extending the
 - [`usage.md`](usage.md) — how to run it, upload books, and read them.
 - [`extending.md`](extending.md) — what to know before modifying the ingester, server, or templates.
 - [`api.md`](api.md) — HTTP routes exposed by `server.py`.
+- [`chat-and-notebook.md`](chat-and-notebook.md) — how the LLM chat and bitácora notebook work end-to-end.
 
 ## 30-second tour
 
