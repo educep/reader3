@@ -461,9 +461,16 @@
             el.innerHTML = DOMPurify.sanitize(marked.parse(raw));
         });
         mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+        function extractMermaidSource(body) {
+            if (!body) return '';
+            const fenced = body.match(/```mermaid\s*\r?\n([\s\S]*?)```/i)
+                        || body.match(/```[a-zA-Z0-9_-]*\s*\r?\n([\s\S]*?)```/);
+            return (fenced ? fenced[1] : body).trim();
+        }
         document.querySelectorAll('pre.mermaid').forEach(async (el) => {
+            const source = extractMermaidSource(el.textContent);
             try {
-                const { svg } = await mermaid.render('mmd-' + Math.random().toString(36).slice(2), el.textContent);
+                const { svg } = await mermaid.render('mmd-' + Math.random().toString(36).slice(2), source);
                 el.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
             } catch (e) {
                 el.textContent = 'Diagram error';

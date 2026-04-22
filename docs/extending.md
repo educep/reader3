@@ -31,7 +31,12 @@ If you see a 404 on an image after ingest, it almost always means the `src` in t
 
 ## Path safety
 
-`GET /read/{book_id}/images/{image_name}` sanitises both path params with `os.path.basename`. If you add any new route that reads from disk using user-supplied components, do the same — or `os.path.realpath` + `startswith(BOOKS_DIR)` check.
+Two strategies are in use:
+
+- `load_book_cached` resolves the pickle path with `os.path.realpath` and rejects anything outside `BOOKS_DIR` — the stronger check, and what you should prefer for any new path that traverses multiple components.
+- `GET /read/{book_id}/images/{image_name}`, the `/chat` handler, and the notebook routes sanitize user-supplied components with `os.path.basename` — the cheap check, fine when only a single folder/filename segment comes from the user.
+
+If you add a new route that reads from disk using user-supplied components, do one of those — never concatenate the raw param.
 
 ## Templates
 

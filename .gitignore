@@ -5,6 +5,10 @@ build/
 dist/
 wheels/
 *.egg-info
+/.mypy_cache/
+
+# Environment variables
+.env
 
 # Virtual environments
 .venv

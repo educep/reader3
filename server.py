@@ -23,7 +23,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from reader3 import Book, llm, notebook, process_epub, save_to_pickle
+from reader3 import Book, llm, notebook, process_epub, save_to_pickle, settings
 
 logger = logging.getLogger(__name__)
 
@@ -194,9 +194,8 @@ async def serve_image(book_id: str, image_name: str):
 
 @app.get("/chat/health")
 async def chat_health():
-    has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    model = os.environ.get("READER3_MODEL", llm.DEFAULT_MODEL)
-    return {"ok": has_key, "model": model, "has_key": has_key}
+    has_key = settings.has_anthropic_key()
+    return {"ok": has_key, "model": settings.READER3_MODEL, "has_key": has_key}
 
 
 @app.post("/chat")
@@ -208,7 +207,7 @@ async def chat_endpoint(request: ChatRequest):
     if request.chapter_index < 0 or request.chapter_index >= len(book.spine):
         raise HTTPException(status_code=422, detail="chapter_index out of range")
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not settings.has_anthropic_key():
         raise HTTPException(status_code=503, detail="ANTHROPIC_API_KEY not configured")
 
     chapter = book.spine[request.chapter_index]
@@ -219,19 +218,68 @@ async def chat_endpoint(request: ChatRequest):
         if selection
         else ""
     )
+
+    action_instructions = {
+        "explain": (
+            "Explain the selected passage concisely. If the selection is short (a title, "
+            "a phrase), give a 1–2 sentence gloss. If it's a longer passage, 3–5 sentences. "
+            "Prefer plain prose over lists. Do not pad."
+        ),
+        "summarize": (
+            "Summarize the selected passage in at most 2–3 short sentences. If the selection "
+            "is itself short (a title or a single sentence), say so and offer a one-line paraphrase "
+            "instead of inventing content."
+        ),
+        "translate": (
+            "Translate the selected passage into the user's likely language (infer from context; "
+            "default to English). Output only the translation — no preamble, no commentary."
+        ),
+        "discuss": (
+            "Offer one short opening observation about the selected passage (2–4 sentences max), "
+            "then ask the user one focused question to continue the conversation. Do not write an "
+            "essay. If the selection is just a title or heading, treat it as a prompt for a brief "
+            "remark — not a full analysis."
+        ),
+        "free": (
+            "Respond to the user's message conversationally. Keep answers tight unless the user "
+            "asks for depth."
+        ),
+    }
+    action_guidance = action_instructions.get(
+        request.action, "Respond helpfully and concisely to the user's request."
+    )
+
+    chapter_list = "\n".join(f"  {i + 1}. {c.title}" for i, c in enumerate(book.spine))
+
     system_prompt = (
         f"You are a literary assistant reading along with the user.\n"
         f"Book: {book.metadata.title} by {authors}\n"
-        f"Chapter: {request.chapter_index + 1} — {chapter.title}\n"
-        f"Chapter text (excerpt for context):\n{chapter.text[:3000]}"
+        f"Current chapter: {request.chapter_index + 1} — {chapter.title}\n"
+        f"Full chapter list (for reference — you do NOT have the text of other chapters):\n"
+        f"{chapter_list}\n"
+        f"Current chapter text:\n{chapter.text}"
         f"{selection_line}\n"
-        f"Action requested: {request.action}"
+        f"Action requested: {request.action}\n"
+        f"Instructions for this action: {action_guidance}\n"
+        f"Scope rules: you have the FULL text of the current chapter only. If the user asks "
+        f"about a different chapter/section by name or number, say you don't have its text "
+        f"loaded and suggest they navigate to it — do not invent content. When the user asks "
+        f"about a section or bullet list in the current chapter, search the chapter text above "
+        f"before answering — do not guess from the chapter title. You CAN render diagrams using "
+        f"mermaid fenced code blocks (```mermaid ... ```) when the user asks for a diagram, flow, "
+        f"timeline, or relationship map of what's actually in the current chapter.\n"
+        f"General style: be concise; match response length to selection length; "
+        f"never pad with recaps of what the user just selected."
     )
+
+    messages: list[MessageParam] = list(request.messages)
+    if not messages:
+        messages = [{"role": "user", "content": "Please proceed with the requested action."}]
 
     async def generate():
         try:
             async for token in llm.stream_chat(
-                messages=request.messages,
+                messages=messages,
                 system=system_prompt,
             ):
                 yield f"data: {json.dumps({'token': token})}\n\n"

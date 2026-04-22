@@ -1,3 +1,6 @@
+(function () {
+'use strict';
+
 // Constants set by reader.html template
 const bookId = window.READER3_BOOK_ID;
 const chapterIndex = window.READER3_CHAPTER_INDEX;
@@ -165,9 +168,28 @@ async function streamResponse(action, selection) {
         }
         if (payload.done) {
           // Render markdown safely
-          const html = DOMPurify.sanitize(marked.parse(rawText));
+          const html = DOMPurify.sanitize(marked.parse(rawText), { ADD_TAGS: ['pre'], ADD_ATTR: ['class'] });
           bubble.innerHTML = html;
           bubble.classList.remove('msg-streaming');
+          // Convert ```mermaid fenced blocks (rendered by marked as <pre><code class="language-mermaid">)
+          // into <pre class="mermaid"> nodes, then run mermaid.
+          bubble.querySelectorAll('pre > code.language-mermaid').forEach((code) => {
+            const pre = code.parentElement;
+            const wrap = document.createElement('pre');
+            wrap.className = 'mermaid';
+            wrap.textContent = code.textContent;
+            pre.replaceWith(wrap);
+          });
+          if (window.mermaid) {
+            bubble.querySelectorAll('pre.mermaid').forEach(async (el) => {
+              try {
+                const { svg } = await window.mermaid.render('mmd-chat-' + Math.random().toString(36).slice(2), el.textContent);
+                el.innerHTML = svg;
+              } catch (e) {
+                el.textContent = 'Diagram error: ' + (e && e.message ? e.message : e);
+              }
+            });
+          }
           messages.push({ role: 'assistant', content: rawText });
           // Store raw text and append Save to Notebook button
           bubble.dataset.raw = rawText;
@@ -192,3 +214,5 @@ async function streamResponse(action, selection) {
     }
   }
 }
+
+})();

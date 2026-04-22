@@ -18,6 +18,16 @@
   // ── DOM helpers ─────────────────────────────────────────────────────────────
   function qs(sel) { return document.querySelector(sel); }
 
+  // Strip a ```mermaid ... ``` fence (or any fenced block) so the inner diagram
+  // source is what mermaid actually renders. Legacy entries saved before this
+  // stripping was in place still render correctly.
+  function extractMermaidSource(body) {
+    if (!body) return '';
+    const fenced = body.match(/```mermaid\s*\r?\n([\s\S]*?)```/i)
+                || body.match(/```[a-zA-Z0-9_-]*\s*\r?\n([\s\S]*?)```/);
+    return (fenced ? fenced[1] : body).trim();
+  }
+
   // ── Tab switching (Chat ↔ Notebook) ─────────────────────────────────────────
   function activateTab(tabId) {
     const tabChat     = document.getElementById('tabChat');
@@ -95,13 +105,23 @@
       if (entry.type === 'diagram') {
         const pre = document.createElement('pre');
         pre.className = 'mermaid';
-        pre.textContent = entry.body || '';
+        const source = extractMermaidSource(entry.body);
+        pre.textContent = source;
         body.appendChild(pre);
         card.appendChild(body);
-        // Run mermaid after card is in DOM (deferred below)
-        setTimeout(() => {
-          if (typeof mermaid !== 'undefined') {
-            mermaid.run({ nodes: [pre] }).catch(() => {});
+        // Render mermaid after the card is in the DOM. Use mermaid.render +
+        // innerHTML (same path as chat/digest) to avoid mermaid.run's
+        // data-processed short-circuit and to surface parse errors clearly.
+        setTimeout(async () => {
+          if (typeof mermaid === 'undefined') return;
+          try {
+            const { svg } = await mermaid.render(
+              'mmd-nb-' + Math.random().toString(36).slice(2),
+              source,
+            );
+            pre.innerHTML = svg;
+          } catch (e) {
+            pre.textContent = 'Diagram error: ' + (e && e.message ? e.message : e);
           }
         }, 0);
       } else {
@@ -293,8 +313,9 @@
         const typeSelect = document.getElementById('nbTypeSelect');
         const bodyInput  = document.getElementById('nbBodyInput');
         const type = (typeSelect ? typeSelect.value : 'note') || 'note';
-        const body = (bodyInput ? bodyInput.value.trim() : '');
+        let body = (bodyInput ? bodyInput.value.trim() : '');
         if (!body) return;
+        if (type === 'diagram') body = extractMermaidSource(body);
 
         await createEntry({
           scope: { level: 'chapter', chapter_index: chapterIndex },

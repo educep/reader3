@@ -1,10 +1,11 @@
-import os
 from collections.abc import AsyncIterator
 
 import anthropic
 from anthropic.types import MessageParam
 
-DEFAULT_MODEL: str = "claude-sonnet-4-6"
+from reader3 import settings
+
+DEFAULT_MODEL: str = settings.READER3_MODEL
 
 _client: anthropic.AsyncAnthropic | None = None
 
@@ -24,13 +25,13 @@ async def stream_chat(
     """Stream a chat response from Claude, yielding text deltas as they arrive.
 
     Reads ANTHROPIC_API_KEY from the environment at call time.
-    Model precedence: READER3_MODEL env var > model param > DEFAULT_MODEL.
+    Model precedence: model param > settings.READER3_MODEL (which reads READER3_MODEL env).
     The system prompt is sent with cache_control ephemeral for prompt caching.
     """
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not settings.has_anthropic_key():
         raise RuntimeError("ANTHROPIC_API_KEY not set")
 
-    resolved_model: str = os.environ.get("READER3_MODEL") or model or DEFAULT_MODEL
+    resolved_model: str = model or settings.READER3_MODEL
 
     client = _get_client()
 
