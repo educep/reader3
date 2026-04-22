@@ -12,3 +12,6 @@ wheels/
 # Custom
 *_data/
 *.epub
+/reviews/
+/solution/
+/docs/plans/
