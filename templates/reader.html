@@ -672,7 +672,7 @@
 
     <script>
         const spineMap = {
-            {% for ch in book.spine %}"{{ ch.href }}": {{ ch.order }},
+            {% for ch in book.spine %}{{ ch.href | tojson }}: {{ ch.order }},
             {% endfor %}
         };
         const bookId = "{{ book_id }}";

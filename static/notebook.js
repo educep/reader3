@@ -167,7 +167,7 @@
       renderEntries(entries, document.getElementById('nbEntryList'));
       renderMarginMarks(entries);
       updateBreadcrumb();
-    } catch (_) {}
+    } catch (err) { console.error('loadScopeEntries failed', err); }
   }
 
   // ── API: load index entries ──────────────────────────────────────────────────
@@ -186,7 +186,7 @@
       const data = await resp.json();
       const entries = data.entries || data || [];
       renderEntries(entries, document.getElementById('nbIndexList'));
-    } catch (_) {}
+    } catch (err) { console.error('loadIndexEntries failed', err); }
   }
 
   // ── API: create entry ────────────────────────────────────────────────────────
@@ -200,7 +200,7 @@
       });
       if (!resp.ok) return;
       await loadScopeEntries();
-    } catch (_) {}
+    } catch (err) { console.error('createEntry failed', err); }
   }
 
   // ── API: delete entry ────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@
       // Remove margin mark
       document.querySelectorAll('.margin-mark[data-entry-id="' + id + '"]')
         .forEach(el => el.remove());
-    } catch (_) {}
+    } catch (err) { console.error('deleteEntry failed', err); }
   }
 
   // ── Breadcrumb ───────────────────────────────────────────────────────────────

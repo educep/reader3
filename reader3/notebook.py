@@ -10,6 +10,7 @@ import tempfile
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 
 import filelock
 
@@ -62,7 +63,7 @@ def save(book_id: str, data: dict) -> None:
         os.replace(tmp_path, path)
 
 
-def _validate_entry(book_id: str, entry_data: dict, get_book: Callable) -> None:
+def _validate_entry(book_id: str, entry_data: dict, get_book: Callable[[str], Any]) -> None:
     scope = entry_data.get("scope", {})
     level = scope.get("level", "book")
     if level == "book":
@@ -101,7 +102,7 @@ def _validate_entry(book_id: str, entry_data: dict, get_book: Callable) -> None:
             )
 
 
-def create_entry(book_id: str, entry_data: dict, get_book: Callable) -> dict:
+def create_entry(book_id: str, entry_data: dict, get_book: Callable[[str], Any]) -> dict:
     _validate_entry(book_id, entry_data, get_book)
     notebook = load(book_id)
     now = _now()

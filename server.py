@@ -1,10 +1,12 @@
 import contextlib
 import json
+import logging
 import os
 import pickle
 import re
 import shutil
 import tempfile
+from collections import defaultdict
 from functools import lru_cache
 from typing import Literal
 
@@ -22,6 +24,8 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from reader3 import Book, llm, notebook, process_epub, save_to_pickle  # type: ignore[attr-defined]
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 os.makedirs("static", exist_ok=True)
@@ -59,8 +63,8 @@ def load_book_cached(folder_name: str) -> Book | None:
         with open(file_path, "rb") as f:
             book = pickle.load(f)
         return book
-    except Exception as e:
-        print(f"Error loading book {folder_name}: {e}")
+    except Exception:
+        logger.exception("Error loading book %s", folder_name)
         return None
 
 
@@ -296,8 +300,6 @@ async def notebook_digest(request: Request, book_id: str):
     if not book:
         raise HTTPException(status_code=404, detail="Book not found")
     data = notebook.load(safe_id)
-    from collections import defaultdict
-
     grouped: dict[int | str, list] = defaultdict(list)
     for entry in data.get("entries", []):
         lvl = entry.get("scope", {}).get("level", "book")

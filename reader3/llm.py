@@ -6,6 +6,15 @@ from anthropic.types import MessageParam
 
 DEFAULT_MODEL: str = "claude-sonnet-4-6"
 
+_client: anthropic.AsyncAnthropic | None = None
+
+
+def _get_client() -> anthropic.AsyncAnthropic:
+    global _client
+    if _client is None:
+        _client = anthropic.AsyncAnthropic()
+    return _client
+
 
 async def stream_chat(
     messages: list[MessageParam],
@@ -23,7 +32,7 @@ async def stream_chat(
 
     resolved_model: str = os.environ.get("READER3_MODEL") or model or DEFAULT_MODEL
 
-    client = anthropic.AsyncAnthropic()
+    client = _get_client()
 
     async with client.messages.stream(
         model=resolved_model,
@@ -37,6 +46,5 @@ async def stream_chat(
         ],
         messages=messages,
     ) as stream:
-        async for event in stream:
-            if event.type == "content_block_delta" and event.delta.type == "text_delta":
-                yield event.delta.text
+        async for text in stream.text_stream:
+            yield text
