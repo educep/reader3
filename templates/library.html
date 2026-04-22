@@ -317,13 +317,12 @@
             text-decoration: none;
             color: inherit;
             transition: background 220ms ease;
-            opacity: 0;
-            animation: rise 620ms cubic-bezier(.2,.7,.2,1) forwards;
+            animation: rise 520ms cubic-bezier(.2,.7,.2,1) both;
         }
-        .book-card:nth-child(n) { animation-delay: calc(var(--i, 0) * 60ms); }
+        .book-card:nth-child(n) { animation-delay: calc(var(--i, 0) * 50ms); }
         @keyframes rise {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: none; }
+            from { transform: translateY(8px); }
+            to   { transform: none; }
         }
         .book-card:hover { background: rgba(255, 253, 247, 0.7); }
         .book-card::before {
@@ -424,16 +423,9 @@
         }
 
         /* Hidden native file input */
-        /* Visually hidden but kept in layout — some browsers refuse to open
-           the native file picker when the input is display:none. */
-        #fileInput {
-            position: absolute;
-            width: 1px; height: 1px;
-            opacity: 0;
-            pointer-events: none;
-            overflow: hidden;
-            clip: rect(0 0 0 0);
-        }
+        #fileInput { display: none; }
+        /* The label #browseBtn carries the click that opens the picker. */
+        label.dz-action { cursor: pointer; }
 
         /* New-book flash on just-uploaded card */
         .book-card.is-new {
@@ -468,10 +460,10 @@
                 <div class="dz-kicker">Acquisitions &mdash; Drop File</div>
                 <h2 class="dz-title">Submit a new <em>volume</em>.</h2>
                 <p class="dz-sub">Drag an <code style="font-family:inherit;">.epub</code> onto this card, or click to browse. The book will be parsed, catalogued, and placed on the shelf below.</p>
-                <button type="button" class="dz-action" id="browseBtn">
+                <label class="dz-action" id="browseBtn" for="fileInput">
                     <span>Choose File</span>
                     <span class="arrow">→</span>
-                </button>
+                </label>
                 <input type="file" id="fileInput" accept=".epub,application/epub+zip">
                 <div class="dz-progress" id="dzProgress"></div>
                 <div class="dz-status" id="dzStatus">Awaiting submission.</div>
@@ -535,15 +527,16 @@
         }
 
         function openPicker(e) {
-            e.preventDefault();
-            e.stopPropagation();
+            // Don't re-enter when the click originated on the <label> inside the dz —
+            // the label already opens the picker natively; a second fileInput.click()
+            // would toggle it closed or double-fire in some browsers.
+            if (e && (e.target === browseBtn || browseBtn.contains(e.target))) return;
             if (dz.classList.contains('is-busy')) return;
             fileInput.click();
         }
         dz.addEventListener('click', openPicker);
-        browseBtn.addEventListener('click', openPicker);
         dz.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') openPicker(e);
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPicker(); }
         });
 
         ['dragenter', 'dragover'].forEach(ev => {
