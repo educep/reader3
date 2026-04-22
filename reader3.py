@@ -260,7 +260,7 @@ def process_epub(epub_path: str, output_dir: str) -> Book:
             chapter = ChapterContent(
                 id=item_id,
                 href=item.get_name(),  # Important: This links TOC to Content
-                title=f"Section {i+1}",  # Fallback, real titles come from TOC
+                title=f"Section {i + 1}",  # Fallback, real titles come from TOC
                 content=final_html,
                 text=extract_plain_text(soup),
                 order=i,
