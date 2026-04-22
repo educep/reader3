@@ -51,8 +51,8 @@ def load(book_id: str) -> dict:
 def save(book_id: str, data: dict) -> None:
     path = notebook_path(book_id)
     lock = filelock.FileLock(path + ".lock", timeout=LOCK_TIMEOUT)
-    data["updated_at"] = _now()
     with lock:
+        data["updated_at"] = _now()
         dir_ = os.path.dirname(path)
         with tempfile.NamedTemporaryFile(
             mode="w", encoding="utf-8", dir=dir_, suffix=".tmp", delete=False

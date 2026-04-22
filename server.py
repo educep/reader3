@@ -6,6 +6,7 @@ import re
 import shutil
 import tempfile
 from functools import lru_cache
+from typing import Literal
 
 from anthropic.types import MessageParam
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
@@ -32,7 +33,7 @@ class ChatRequest(BaseModel):
     book_id: str
     chapter_index: int
     selection: str | None = None
-    action: str  # "explain" | "summarize" | "translate" | "discuss" | "free"
+    action: Literal["explain", "summarize", "translate", "discuss", "free"]
     messages: list[MessageParam]
 
 
@@ -48,6 +49,10 @@ def load_book_cached(folder_name: str) -> Book | None:
     """
     file_path = os.path.join(BOOKS_DIR, folder_name, "book.pkl")
     if not os.path.exists(file_path):
+        return None
+
+    books_root = os.path.realpath(BOOKS_DIR)
+    if not os.path.realpath(file_path).startswith(books_root + os.sep):
         return None
 
     try:
@@ -301,10 +306,12 @@ async def notebook_digest(request: Request, book_id: str):
         else:
             ci = entry.get("scope", {}).get("chapter_index", 0)
             grouped[ci].append(entry)
+    grouped_dict = dict(grouped)
+    book_entries = grouped_dict.pop("book", [])
     return templates.TemplateResponse(
         request,
         "digest.html",
-        {"book": book, "book_id": safe_id, "grouped": dict(grouped)},
+        {"book": book, "book_id": safe_id, "grouped": grouped_dict, "book_entries": book_entries},
     )
 
 

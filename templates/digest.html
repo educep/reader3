@@ -369,29 +369,27 @@
             <!-- Left: chapter nav -->
             <nav class="digest-nav">
                 <div class="nav-label">Contents</div>
-                {% if 'book' in grouped %}
+                {% if book_entries %}
                 <a href="#book-level" class="nav-item">
                     Book-level
-                    <span class="nav-count">{{ grouped['book'] | length }}</span>
+                    <span class="nav-count">{{ book_entries | length }}</span>
                 </a>
                 {% endif %}
                 {% for ch_idx, entries in grouped.items() %}
-                    {% if ch_idx != 'book' %}
                     <a href="#chapter-{{ ch_idx }}" class="nav-item">
                         Ch.&nbsp;{{ ch_idx + 1 }}
                         <span class="nav-count">{{ entries | length }}</span>
                     </a>
-                    {% endif %}
                 {% endfor %}
             </nav>
 
             <!-- Right: entry groups -->
             <main class="digest-main">
 
-                {% if 'book' in grouped %}
+                {% if book_entries %}
                 <section id="book-level" class="entry-group">
                     <h2 class="group-title">Book-level notes</h2>
-                    {% for entry in grouped['book'] %}
+                    {% for entry in book_entries %}
                     <article class="entry-card">
                         <div class="entry-meta">
                             <span class="entry-type" data-type="{{ entry.type }}">{{ entry.type }}</span>
@@ -411,7 +409,6 @@
                 {% endif %}
 
                 {% for ch_idx in grouped.keys() | sort %}
-                    {% if ch_idx != 'book' %}
                     <section id="chapter-{{ ch_idx }}" class="entry-group">
                         <h2 class="group-title">
                             Chapter {{ ch_idx + 1 }}
@@ -439,7 +436,6 @@
                         </article>
                         {% endfor %}
                     </section>
-                    {% endif %}
                 {% endfor %}
 
                 {% if not grouped %}
@@ -464,7 +460,15 @@
             el.removeAttribute('data-raw');
             el.innerHTML = DOMPurify.sanitize(marked.parse(raw));
         });
-        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+        mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict' });
+        document.querySelectorAll('pre.mermaid').forEach(async (el) => {
+            try {
+                const { svg } = await mermaid.render('mmd-' + Math.random().toString(36).slice(2), el.textContent);
+                el.innerHTML = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+            } catch (e) {
+                el.textContent = 'Diagram error';
+            }
+        });
     </script>
 </body>
 </html>
